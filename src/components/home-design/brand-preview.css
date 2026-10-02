@@ -1,0 +1,462 @@
+/* src/components/home-design/brand-preview.css
+   MH-013: the orange, navy and white brand painted over the live homepage's own chrome and sections,
+   for /design-preview/home only. Every rule is scoped to `.bp`, the class only HomeDesign renders,
+   and is one class stronger than the rule it repaints, so no live page changes. Every colour is a
+   --b-* variable written from tokens.ts; this file holds no colour of its own.
+   The roles: navy grounds for what was forest; navy for links, numbers and button fills on light
+   grounds; light orange (accent-on-navy) for what was the green signal on dark grounds; the lead
+   orange only on lead-capture buttons (the brief and landlord sign-ups, the register button, the
+   hero's two). scratchpad/mh013/green-decls.mjs lists the 107 green declarations this file answers. */
+
+/* ── 1. the home theme's own variables ──────────────────────────────── */
+.home-v2.bp {
+  --m-bg-deep: var(--b-navy);
+  --m-bg-base: var(--b-navy-soft);
+  --m-bg-body: var(--b-page);
+  --m-bg-secondary: var(--b-page-alt);
+  --m-surface: var(--b-paper);
+  --m-border: var(--b-line);
+  --m-border-muted: var(--b-line);
+  --m-accent: var(--b-navy);
+  --m-accent-bright: var(--b-navy-deep);
+  --m-accent-on: var(--b-navy-raised);
+  --m-green: var(--b-accent-on-navy);
+  --m-text: var(--b-on-navy);
+  --m-text-sec: var(--b-on-navy-muted);
+  --m-text-faint: var(--b-on-navy-muted);
+  --m-text-body: var(--b-ink);
+  --m-text-muted: var(--b-muted);
+  --m-sh-sm: 0 2px 8px color-mix(in srgb, var(--b-navy-deep) 6%, transparent);
+  --m-sh: 0 18px 50px color-mix(in srgb, var(--b-navy-deep) 12%, transparent);
+  --m-sh-lg: 0 30px 80px color-mix(in srgb, var(--b-navy-deep) 20%, transparent);
+  background: var(--b-page);
+  color: var(--b-ink);
+}
+
+/* ── 2. the wordmark ────────────────────────────────────────────────────
+   The live gold-to-red gradient runs through orange; beside an orange lead button it reads as a
+   second, competing orange, so it goes. script: Kaushan kept, solid white. serif: Fraunces, the
+   footer's face, "ly" in light orange. */
+.home-v2.bp .m-nav .m-logo,
+.bp .site-nav .m-logo {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--b-on-navy);
+  -webkit-text-fill-color: currentColor;
+}
+.home-v2.bp .m-nav .m-logo b,
+.bp .site-nav .m-logo b {
+  color: inherit;
+}
+.home-v2.bp.bp-wm-serif .m-nav .m-logo,
+.bp.bp-wm-serif .site-nav .m-logo {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  padding: 0;
+}
+.home-v2.bp.bp-wm-serif .m-nav .m-logo b,
+.bp.bp-wm-serif .site-nav .m-logo b {
+  color: var(--b-accent-on-navy);
+  font-weight: 500;
+}
+
+/* ── 3. the nav: the bar, the strip, the phone panel, the mega band ─── */
+.home-v2.bp .m-nav,
+.bp .site-nav {
+  background: linear-gradient(180deg, var(--b-navy-deep) 0%, var(--b-navy) 100%);
+}
+.bp nav .sn-reg {
+  background: var(--b-navy-deep);
+}
+.bp nav .sn-skip {
+  background: var(--b-on-navy);
+  color: var(--b-navy-deep);
+}
+/* the bar's "What's my home worth?" leads to the valuation page; it is drawn quiet, outlined, so the
+   hero's own Selling button stays the one orange thing on the first screen */
+.home-v2.bp .m-navcta,
+.bp .site-nav .m-navcta {
+  background: transparent;
+  color: var(--b-on-navy);
+  border: 1px solid color-mix(in srgb, var(--b-on-navy-muted) 60%, transparent);
+  border-radius: 3px;
+}
+.home-v2.bp .m-navcta:hover,
+.bp .site-nav .m-navcta:hover {
+  background: var(--b-navy-soft);
+}
+/* the home bar's search is a white field (the page variant's is dark) */
+.bp .site-nav .m-navsearch {
+  background: var(--b-navy-soft);
+}
+.home-v2.bp .m-navsearch:focus-within,
+.bp .site-nav .m-navsearch:focus-within {
+  border-color: var(--b-accent-on-navy);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--b-navy-deep) 40%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--b-accent-on-navy) 20%, transparent);
+}
+.home-v2.bp .m-navsearch-lead,
+.home-v2.bp .m-navsearch-go,
+.bp .site-nav .m-navsearch-lead,
+.bp .site-nav .m-navsearch-go {
+  background: var(--b-navy-raised);
+  color: var(--b-on-navy);
+}
+.home-v2.bp .m-navsearch-go:hover,
+.bp .site-nav .m-navsearch-go:hover {
+  background: var(--b-navy-soft);
+}
+.bp nav .sn-burger:active {
+  background: color-mix(in srgb, var(--b-accent-on-navy) 14%, transparent);
+}
+.bp nav .sn-burger:focus-visible,
+.bp nav .m-navtrigger:focus-visible,
+.bp nav .m-mega-tab:focus-visible {
+  outline-color: var(--b-accent-on-navy);
+}
+.bp nav .sn-panel {
+  background: var(--b-navy);
+}
+.bp nav a.sn-panel-cta {
+  background: transparent;
+  color: var(--b-on-navy);
+  border: 1px solid color-mix(in srgb, var(--b-on-navy-muted) 60%, transparent);
+  border-radius: 3px;
+}
+.bp nav .sn-panel-cta:active {
+  background: var(--b-navy-soft);
+}
+.bp nav .m-band {
+  background: var(--b-navy-deep);
+}
+.bp nav .m-mega-label,
+.bp nav .m-mega-hub,
+.bp nav .m-mega-count,
+.bp nav .m-mega-az span,
+.bp nav .m-mega-stripnote,
+.bp nav .m-mega-ok,
+.bp nav .m-mega-change,
+.bp nav .m-mega-edition a,
+.bp nav .sn-acc-item > summary::after,
+.bp nav .sn-item > summary::after {
+  color: var(--b-accent-on-navy);
+}
+.bp nav .m-mega-more a:hover,
+.bp nav .m-mega-more a:focus-visible {
+  color: var(--b-accent-on-navy);
+}
+.bp nav .m-mega-tab.m-sel {
+  background: color-mix(in srgb, var(--b-accent-on-navy) 12%, transparent);
+  border-left-color: var(--b-accent-on-navy);
+}
+.bp nav .m-mega-searchrow:focus-within {
+  border-color: color-mix(in srgb, var(--b-accent-on-navy) 60%, transparent);
+}
+.bp nav .m-mega-searchgo {
+  background: var(--b-navy-raised);
+  color: var(--b-on-navy);
+}
+.bp nav .m-mega-searchgo:hover {
+  background: var(--b-navy-soft);
+}
+.bp nav .m-mega-cards a:hover,
+.bp nav .m-mega-cards a:focus-visible,
+.bp nav .m-mega-frames a:hover,
+.bp nav .m-mega-frames a:focus-visible {
+  border-color: color-mix(in srgb, var(--b-accent-on-navy) 45%, transparent);
+}
+.bp nav .m-mega-photo,
+.bp nav .m-mega-frames img {
+  background: var(--b-navy-deep);
+}
+.bp nav .m-mega-az a:hover,
+.bp nav .m-mega-az a:focus-visible,
+.bp nav .m-mega-strip a:hover,
+.bp nav .m-mega-strip a:focus-visible {
+  background: color-mix(in srgb, var(--b-accent-on-navy) 16%, transparent);
+}
+/* a panel's link button is a way in, not a lead: white on the navy band */
+.bp nav a.m-mega-cta {
+  background: var(--b-on-navy);
+  color: var(--b-navy-deep);
+  border-radius: 3px;
+}
+.bp nav a.m-mega-cta:hover,
+.bp nav a.m-mega-cta:focus-visible {
+  background: var(--b-page);
+}
+/* a panel's form button (the brief, the landlord sign-up) captures a lead: the lead orange */
+.bp nav button.m-mega-cta {
+  background: var(--b-lead);
+  color: var(--b-lead-text);
+  border-radius: 3px;
+}
+.bp nav button.m-mega-cta:hover,
+.bp nav button.m-mega-cta:focus-visible {
+  background: var(--b-lead-hover);
+}
+
+/* ── 4. the sections under the hero ─────────────────────────────────── */
+.home-v2.bp .m-trustbar {
+  background: var(--b-navy-deep);
+}
+.home-v2.bp .m-hero::before,
+.home-v2.bp .m-mls::before,
+.home-v2.bp .m-dual::before {
+  background: radial-gradient(700px 380px at 85% -10%, color-mix(in srgb, var(--b-navy-raised) 50%, transparent), transparent 55%);
+}
+.home-v2.bp .m-askcard,
+.home-v2.bp .m-acdrop,
+.home-v2.bp .m-searchbox {
+  box-shadow: var(--m-sh);
+}
+.home-v2.bp .m-searchbox {
+  border-color: var(--b-line);
+}
+.home-v2.bp .m-acrow.m-acactive,
+.home-v2.bp .m-pill-btn:hover,
+.home-v2.bp .m-pill-btn.m-feat {
+  background: color-mix(in srgb, var(--b-navy) 6%, transparent);
+}
+.home-v2.bp .m-pill-btn.m-feat {
+  border-color: color-mix(in srgb, var(--b-navy) 50%, transparent);
+}
+.home-v2.bp .m-askbar .m-go.m-go-live {
+  background: var(--b-navy);
+  color: var(--b-on-navy);
+}
+.home-v2.bp .m-cardtrust {
+  background: var(--b-page-alt);
+}
+.home-v2.bp .m-searchhint a {
+  border-bottom-color: color-mix(in srgb, var(--b-navy) 35%, transparent);
+}
+.home-v2.bp .m-nhood:hover {
+  border-color: color-mix(in srgb, var(--b-navy) 40%, transparent);
+}
+.home-v2.bp .m-dcard .m-b2 {
+  border-color: color-mix(in srgb, var(--b-accent-on-navy) 45%, transparent);
+}
+/* the VOW register button is the section's one lead-capture control */
+.home-v2.bp .m-vow button,
+.home-v2.bp .m-vow a[role='button'] {
+  background: var(--b-lead);
+  color: var(--b-lead-text);
+  border-radius: 3px;
+}
+.home-v2.bp .mh-frame {
+  background: var(--b-navy-deep);
+}
+.home-v2.bp .mh-nightmark {
+  background: color-mix(in srgb, var(--b-navy-deep) 82%, transparent);
+  border-color: color-mix(in srgb, var(--b-accent-on-navy) 40%, transparent);
+}
+.home-v2.bp .mh-ladder a:hover {
+  background: color-mix(in srgb, var(--b-navy) 6%, transparent);
+}
+/* the ladder's bar is a fill, not text: the accent orange on a navy-tinted track */
+.home-v2.bp .mh-ladbar {
+  background: color-mix(in srgb, var(--b-navy) 10%, transparent);
+}
+.home-v2.bp .mh-ladbar > span {
+  background: var(--b-accent);
+}
+.home-v2.bp .mh-briefrow input:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--b-navy) 16%, transparent);
+}
+/* the daily brief's button captures a lead */
+.home-v2.bp .mh-briefrow button {
+  background: var(--b-lead);
+  color: var(--b-lead-text);
+  border-radius: 3px;
+}
+.home-v2.bp .mh-briefrow button:hover:not(:disabled) {
+  background: var(--b-lead-hover);
+}
+/* the sold line: the palette's soft text at reading size, no figure (it never carries one) */
+.bp [data-sold-history-line] {
+  font-size: 16px;
+  color: var(--b-on-navy-muted);
+}
+.bp [data-sold-history-line] a {
+  color: var(--b-on-navy);
+}
+
+/* ── 5. the footer ──────────────────────────────────────────────────── */
+.bp .m-footer {
+  background: var(--b-navy-deep);
+}
+.bp .m-footer .m-fsearch:focus-within,
+.bp .m-footer .m-fbrief-row:focus-within {
+  border-color: var(--b-accent-on-navy);
+}
+.bp .m-footer .m-fsearch button {
+  background: var(--b-navy-raised);
+  color: var(--b-on-navy);
+}
+.bp .m-footer .m-fsearch button:hover {
+  background: var(--b-navy-soft);
+}
+/* the footer brief's button captures a lead */
+.bp .m-footer .m-fbrief-go {
+  background: var(--b-lead);
+  color: var(--b-lead-text);
+  border-radius: 3px;
+}
+.bp .m-footer .m-fbrief-go:hover {
+  background: var(--b-lead-hover);
+}
+.bp .m-footer .m-fbrief-ok,
+.bp .m-footer .m-fhoods h3 {
+  color: var(--b-accent-on-navy);
+}
+.bp .m-footer .m-fhoodlinks a:hover,
+.bp .m-footer .m-flegal a:hover,
+.bp .m-footer .m-fcol a:hover {
+  color: var(--b-accent-on-navy);
+}
+
+/* ── 6. the VOW acknowledgement card, where a section shows it ──────── */
+.bp section[data-vow-ack] {
+  color: var(--b-navy);
+}
+.bp section[data-vow-ack] .vc-k {
+  color: var(--b-accent-text);
+}
+.bp section[data-vow-ack] input.vc-input,
+.bp section[data-vow-ack] ul.vc-options button {
+  color: var(--b-navy);
+}
+.bp section[data-vow-ack] input.vc-input:focus {
+  border-color: var(--b-navy);
+}
+.bp section[data-vow-ack] ul.vc-options {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--b-navy-deep) 12%, transparent);
+}
+.bp section[data-vow-ack] label.vc-agree input {
+  accent-color: var(--b-navy);
+}
+.bp section[data-vow-ack] button.vc-submit {
+  background: var(--b-lead);
+  color: var(--b-lead-text);
+}
+
+/* ── 7. the valuation card in the valuation band (HomeValuationCard, its forest variant, whose
+   colours are Tailwind classes; matched by class text, within this preview only) ───────────────── */
+.home-v2.bp .mh-valueform [class*="rgba(7,49,38"] {
+  border-color: var(--b-line);
+  border-radius: 4px;
+  box-shadow: var(--m-sh);
+}
+/* the live card loses Tailwind's padding to home-theme.css's `.home-v2 *` reset (production shows
+   0px today); the preview gives it back, so the form reads as a form */
+.home-v2.bp .mh-valueform [class*="rgba(7,49,38"] {
+  padding: 28px;
+}
+.home-v2.bp .mh-valueform input:not([type="checkbox"]) {
+  padding: 0 12px;
+}
+.home-v2.bp .mh-valueform textarea {
+  padding: 10px 12px;
+}
+.home-v2.bp .mh-valueform [class*="uppercase"][class*="text-[#017848]"] {
+  margin-bottom: 8px;
+}
+.home-v2.bp .mh-valueform h3 {
+  margin-bottom: 16px;
+  color: var(--b-navy);
+}
+.home-v2.bp .mh-valueform [class*="mb-2"] {
+  margin-bottom: 8px;
+}
+.home-v2.bp .mh-valueform label {
+  gap: 10px;
+  margin: 6px 0 14px;
+}
+.home-v2.bp .mh-valueform button[type="submit"] {
+  padding: 0 16px;
+}
+.home-v2.bp .mh-valueform p {
+  margin-top: 12px;
+}
+.home-v2.bp .mh-valueform [class*="text-[#017848]"] {
+  color: var(--b-navy);
+}
+/* its kicker: sentence case at label size, not 10px capitals */
+.home-v2.bp .mh-valueform [class*="uppercase"][class*="text-[#017848]"] {
+  color: var(--b-accent-text);
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.home-v2.bp .mh-valueform input:not([type="checkbox"]),
+.home-v2.bp .mh-valueform textarea {
+  border-color: var(--b-line);
+  border-radius: 3px;
+  color: var(--b-ink);
+  font-size: 16px;
+}
+.home-v2.bp .mh-valueform input:not([type="checkbox"]):focus,
+.home-v2.bp .mh-valueform textarea:focus {
+  border-color: var(--b-navy);
+}
+.home-v2.bp .mh-valueform input[type="checkbox"] {
+  accent-color: var(--b-navy);
+  color: var(--b-navy);
+  border-color: var(--b-line);
+}
+.home-v2.bp .mh-valueform [class*="text-[11px]"],
+.home-v2.bp .mh-valueform [class*="text-[10px]"],
+.home-v2.bp .mh-valueform [class*="text-[12px]"] {
+  font-size: 14px;
+}
+/* the card's submit captures a lead */
+.home-v2.bp .mh-valueform button[type="submit"] {
+  background: var(--b-lead);
+  color: var(--b-lead-text);
+  border-radius: 3px;
+  font-size: 16px;
+}
+.home-v2.bp .mh-valueform button[type="submit"]:hover {
+  background: var(--b-lead-hover);
+}
+/* its thank-you state, should anyone submit on the preview */
+.home-v2.bp .mh-valueform [class*="16a34a"],
+.home-v2.bp .mh-valueform [class*="86efac"] {
+  color: var(--b-navy);
+  background-color: var(--b-accent-tint);
+  border-color: var(--b-line);
+}
+
+/* ── 8. every placeholder, readable on its own field ────────────────── */
+.home-v2.bp input::placeholder,
+.home-v2.bp textarea::placeholder,
+.home-v2.bp nav.m-nav .m-navsearch input::placeholder {
+  color: var(--b-muted);
+  opacity: 1;
+}
+.bp nav input::placeholder,
+.bp .m-footer input::placeholder,
+.bp nav .m-mega-searchrow input::placeholder,
+.bp .m-footer .m-fsearch input::placeholder,
+.bp .m-footer .m-fbrief-row input::placeholder {
+  color: var(--b-on-navy-muted);
+  opacity: 1;
+}
+
+/* ── 9. a net for any other Tailwind green inside the preview ───────── */
+.bp [class*="text-[#017848]"],
+.bp [class*="text-[#073126]"] {
+  color: var(--b-navy);
+}
+.bp [class*="bg-[#073126]"] {
+  background-color: var(--b-navy);
+}
+.bp [class*="border-[#017848]"],
+.bp [class*="border-[#073126]"] {
+  border-color: var(--b-line);
+}
