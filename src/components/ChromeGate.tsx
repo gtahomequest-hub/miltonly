@@ -52,6 +52,7 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   if (pathname === "/guide-preview") return null; // guides-v2 article preview
   if (pathname === "/guides-preview") return null; // guides-v2 index preview
   if (pathname === "/hub-preview") return null; // hub-v2 design preview (forest body owns chrome)
+  if (pathname?.startsWith("/design-preview/")) return null; // MH-011 street design preview (owns its chrome)
   if (pathname === "/condo-preview") return null; // condo-v2 design preview (forest body owns chrome)
   if (pathname === "/coming-soon") return null;
   if (pathname?.startsWith("/rentals/ads")) return null;

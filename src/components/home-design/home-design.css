@@ -1,0 +1,809 @@
+/* src/components/home-design/home-design.css
+   MH-012: the homepage hero design preview. Everything is scoped under .hd, which sits inside
+   .home-v2, so every rule is written as `.hd .x` to outrank home-theme.css's `.home-v2 *` reset.
+   The colours arrive as CSS variables on .hd (tokens.ts). #00ff80 appears on .hd-btn-cta only,
+   and every .hd-btn-cta is a lead-capture button. Breakpoint 760px, the nav's own. */
+
+.home-v2 .hd {
+  background: var(--hd-bg);
+  color: var(--hd-ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+.hd .hd-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+@media (min-width: 768px) {
+  .hd .hd-wrap {
+    padding: 0 32px;
+  }
+}
+.hd h1,
+.hd h2,
+.hd h3 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.hd ul {
+  list-style: none;
+}
+.hd svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── the forest band: H1 and search ─────────────────────────────────── */
+.hd .hd-top {
+  background: var(--hd-forest);
+  color: var(--hd-on-forest);
+  /* the fixed 66px bar sits over this band; the strip's height is already in flow */
+  padding: 86px 0 32px;
+}
+@media (min-width: 760px) {
+  .hd .hd-top {
+    padding: 104px 0 44px;
+  }
+}
+.hd .hd-h1 {
+  color: var(--hd-on-forest);
+  font-weight: 400;
+  font-size: clamp(32px, 6.2vw, 66px);
+  line-height: 1.03;
+  letter-spacing: -0.025em;
+  font-variation-settings: "opsz" 144;
+}
+.hd .hd-h1-lead {
+  display: block;
+  max-width: 12em;
+  text-wrap: balance;
+}
+.hd .hd-h1-tail {
+  display: block;
+  margin-top: 12px;
+  font-size: max(20px, 0.5em);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--hd-support-on-dark);
+}
+
+/* ── search ─────────────────────────────────────────────────────────── */
+.hd .hd-search {
+  margin-top: 24px;
+  max-width: 640px;
+}
+@media (min-width: 760px) {
+  .hd .hd-search {
+    margin-top: 30px;
+  }
+}
+.hd .hd-search-label {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--hd-on-forest);
+}
+.hd .hd-search-box {
+  position: relative;
+}
+.hd .hd-search-field {
+  display: flex;
+  align-items: center;
+  background: var(--hd-paper);
+  border: 1.5px solid var(--hd-paper);
+  border-radius: 12px;
+}
+.hd .hd-search-field:focus-within {
+  outline: 3px solid var(--hd-support-on-dark);
+  outline-offset: 2px;
+}
+.hd .hd-search-ic {
+  display: flex;
+  align-items: center;
+  padding-left: 14px;
+  color: var(--hd-muted);
+}
+.hd .hd-search-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 56px;
+  border: 0;
+  background: transparent;
+  padding: 0 10px;
+  font: 500 17px/1.2 var(--font-inter), system-ui, sans-serif;
+  color: var(--hd-ink);
+  outline: none;
+}
+.hd .hd-search-field input::placeholder {
+  color: var(--hd-muted);
+  font-weight: 400;
+  opacity: 1;
+}
+.hd .hd-search-go {
+  flex: 0 0 auto;
+  min-width: 64px;
+  min-height: 46px;
+  margin: 5px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--hd-forest);
+  color: var(--hd-on-forest);
+  font: 600 16px/1 var(--font-inter), system-ui, sans-serif;
+  cursor: pointer;
+}
+.hd .hd-search-go:focus-visible {
+  outline: 3px solid var(--hd-accent);
+  outline-offset: 2px;
+}
+.hd .hd-search-hint {
+  margin-top: 8px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  color: var(--hd-on-forest-muted);
+}
+@media (max-width: 759px) {
+  /* the label already says street or address; on a phone the line only pushes the sides down */
+  .hd .hd-search-hint {
+    display: none;
+  }
+}
+/* wide screens: the H1 on the left, the search on the right, so the two sides rise into view */
+@media (min-width: 1024px) {
+  .hd .hd-top .hd-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    column-gap: 56px;
+    align-items: end;
+  }
+  .hd .hd-top .hd-search {
+    margin-top: 0;
+    max-width: none;
+  }
+}
+.hd .hd-drop {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 6px 0;
+  background: var(--hd-paper);
+  border: 1px solid var(--hd-line);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(7, 49, 38, 0.18);
+  color: var(--hd-ink);
+}
+.hd .hd-drop-group {
+  padding: 10px 16px 4px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  color: var(--hd-muted);
+}
+.hd .hd-drop-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 16px;
+}
+.hd .hd-drop-row.is-active {
+  background: var(--hd-bg);
+}
+.hd .hd-drop-ic {
+  color: var(--hd-accent);
+  display: flex;
+}
+.hd .hd-drop-fallback {
+  border-top: 1px solid var(--hd-line);
+  margin-top: 4px;
+}
+
+/* ── buttons, rows and tags (A and C) ───────────────────────────────── */
+.hd .hd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  font: 600 17px/1.2 var(--font-inter), system-ui, sans-serif;
+  text-align: center;
+  text-decoration: none;
+}
+.hd .hd-btn:focus-visible {
+  outline: 3px solid var(--hd-accent);
+  outline-offset: 3px;
+}
+.hd .hd-btn-cta {
+  background: var(--hd-cta);
+  border-color: var(--hd-cta);
+  color: var(--hd-forest);
+}
+.hd .hd-btn-cta:hover {
+  box-shadow: 0 0 0 4px rgba(0, 255, 128, 0.28);
+}
+.hd .hd-cta-detail {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--hd-muted);
+}
+.hd .hd-rows {
+  margin-top: 22px;
+  border-top: 1px solid var(--hd-line);
+}
+.hd .hd-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 66px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--hd-line);
+  color: var(--hd-ink);
+  text-decoration: none;
+}
+.hd a.hd-row:hover .hd-row-label {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hd a.hd-row:focus-visible {
+  outline: 3px solid var(--hd-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.hd .hd-row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.hd .hd-row-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.hd a.hd-row .hd-row-label {
+  color: var(--hd-accent);
+}
+.hd .hd-row-detail {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--hd-muted);
+}
+.hd .hd-row-go {
+  flex: 0 0 auto;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--hd-accent);
+}
+.hd .hd-row.is-planned .hd-row-label {
+  color: var(--hd-muted);
+}
+.hd .hd-badge {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--hd-forest);
+  color: var(--hd-on-forest);
+}
+.hd .hd-tag {
+  flex: 0 0 auto;
+  display: inline-block;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--hd-support-tint);
+  color: var(--hd-support);
+}
+.hd .hd-rent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
+  margin-top: 26px;
+  font-size: 15px;
+  color: var(--hd-muted);
+}
+.hd .hd-rent a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--hd-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hd .hd-rent a:focus-visible,
+.hd .hd-jump a:focus-visible,
+.hd a.hd-say-row:focus-visible {
+  outline: 3px solid var(--hd-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+/* ── A · Road ───────────────────────────────────────────────────────── */
+.hd-a .hd-street {
+  background: var(--hd-bg);
+  padding-bottom: 44px;
+}
+.hd .hd-tabs {
+  display: none;
+}
+.hd .hd-a-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
+  gap: 0 36px;
+}
+.hd .hd-road {
+  /* MH-011's road turned upright: forest asphalt, a clay centre line, rounded where it ends */
+  background-color: var(--hd-forest);
+  background-image: linear-gradient(var(--hd-support-on-dark) 50%, transparent 50%);
+  background-size: 3px 30px;
+  background-repeat: repeat-y;
+  background-position: center 10px;
+  border-radius: 0 0 38px 38px;
+}
+.hd .hd-side {
+  padding-top: 40px;
+}
+.hd .hd-side-h {
+  font-size: 46px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--hd-forest);
+  font-variation-settings: "opsz" 144;
+}
+.hd .hd-side-h::before {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 4px;
+  border-radius: 2px;
+  margin-bottom: 16px;
+  background: var(--hd-accent);
+}
+.hd .hd-side-sell .hd-side-h::before {
+  background: var(--hd-support);
+}
+.hd .hd-side-note {
+  margin: 10px 0 20px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  color: var(--hd-muted);
+}
+@media (max-width: 759px) {
+  .hd .hd-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0 -16px;
+    position: relative;
+    background: var(--hd-forest-soft);
+  }
+  .hd .hd-tabs::after {
+    /* the centre line between the two lanes */
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    margin-left: -1px;
+    background-image: linear-gradient(var(--hd-support-on-dark) 50%, transparent 50%);
+    background-size: 2px 12px;
+    pointer-events: none;
+  }
+  .hd .hd-tab {
+    min-height: 56px;
+    border: 0;
+    border-top: 4px solid transparent;
+    background: transparent;
+    color: var(--hd-on-forest-muted);
+    font: 600 17px/1 var(--font-inter), system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .hd .hd-tab[aria-selected="true"] {
+    position: relative;
+    z-index: 1;
+    background: var(--hd-bg);
+    color: var(--hd-forest);
+    border-top-color: var(--hd-accent);
+  }
+  .hd .hd-tab-sell[aria-selected="true"] {
+    border-top-color: var(--hd-support);
+  }
+  .hd .hd-tab:focus-visible {
+    outline: 3px solid var(--hd-support-on-dark);
+    outline-offset: -5px;
+  }
+  .hd .hd-a-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hd .hd-road {
+    display: none;
+  }
+  .hd .hd-side:not(.is-active) {
+    display: none;
+  }
+  .hd .hd-side {
+    padding-top: 20px;
+  }
+  /* the lane already names the side; the heading stays for the outline and screen readers */
+  .hd .hd-side-h {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .hd .hd-side-note {
+    margin: 0 0 14px;
+  }
+  .hd .hd-side .hd-btn-cta {
+    width: 100%;
+  }
+}
+
+/* ── B · Sentences ──────────────────────────────────────────────────── */
+.hd-b .hd-b-top {
+  padding-bottom: 30px;
+}
+.hd .hd-jump {
+  display: none;
+}
+.hd .hd-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.hd .hd-half {
+  scroll-margin-top: calc(66px + var(--sn-strip-h, 30px) + 8px);
+}
+.hd .hd-half-buy {
+  background: var(--hd-forest);
+  color: var(--hd-on-forest);
+}
+.hd .hd-half-sell {
+  background: var(--hd-bg);
+  color: var(--hd-ink);
+  /* the kerb between the two grounds */
+  box-shadow: inset 4px 0 0 var(--hd-support-on-dark);
+}
+.hd .hd-half-in {
+  padding: 34px 44px 46px;
+}
+.hd .hd-half-buy .hd-half-in {
+  padding-left: max(16px, calc(100% - 560px + 32px));
+}
+.hd .hd-half-sell .hd-half-in {
+  padding-right: max(16px, calc(100% - 560px + 32px));
+}
+.hd .hd-say {
+  font-size: clamp(32px, 4.2vw, 50px);
+  font-weight: 400;
+  line-height: 1;
+  font-variation-settings: "opsz" 144;
+}
+.hd .hd-half-buy .hd-say {
+  color: var(--hd-on-forest);
+}
+.hd .hd-half-sell .hd-say {
+  color: var(--hd-forest);
+}
+.hd .hd-says {
+  margin-top: 14px;
+}
+.hd .hd-say-end {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 22px;
+  line-height: 1.25;
+}
+.hd .hd-say-primary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0 24px;
+}
+.hd .hd-say-primary .hd-cta-detail {
+  margin-top: 0;
+}
+.hd .hd-half-buy .hd-cta-detail {
+  color: var(--hd-on-forest-muted);
+}
+.hd .hd-say-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 64px;
+  padding: 14px 0;
+  border-top: 1px solid var(--hd-line);
+  color: inherit;
+  text-decoration: none;
+}
+.hd .hd-half-buy .hd-say-row {
+  border-top-color: rgba(255, 255, 255, 0.2);
+}
+.hd .hd-say-go {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.hd a.hd-say-row .hd-say-go {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hd .hd-half-buy a.hd-say-row .hd-say-go {
+  color: var(--hd-on-forest-muted);
+}
+.hd .hd-half-sell a.hd-say-row .hd-say-go {
+  color: var(--hd-accent);
+}
+.hd .hd-say-row.is-planned .hd-say-go {
+  color: var(--hd-muted);
+}
+.hd .hd-half-buy .hd-say-row.is-planned .hd-say-go {
+  color: var(--hd-on-forest-muted);
+}
+.hd .hd-b-rent {
+  padding-bottom: 28px;
+}
+.hd .hd-b-rent .hd-rent {
+  margin-top: 16px;
+}
+@media (max-width: 759px) {
+  .hd .hd-jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .hd .hd-jump a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    border: 1.5px solid var(--hd-on-forest-muted);
+    color: var(--hd-on-forest);
+    font-weight: 600;
+    font-size: 16px;
+    text-decoration: none;
+  }
+  .hd .hd-jump .hd-jump-sell {
+    border-color: var(--hd-support-on-dark);
+  }
+  .hd .hd-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hd .hd-half-in,
+  .hd .hd-half-buy .hd-half-in,
+  .hd .hd-half-sell .hd-half-in {
+    padding: 26px 16px 30px;
+  }
+  .hd .hd-half-buy {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+  .hd .hd-half-sell {
+    box-shadow: inset 0 4px 0 var(--hd-support-on-dark);
+  }
+  .hd .hd-say-primary .hd-btn-cta {
+    width: 100%;
+  }
+}
+
+/* ── C · Doors ──────────────────────────────────────────────────────── */
+.hd-c .hd-c-band {
+  padding-bottom: 104px;
+}
+.hd .hd-doors {
+  position: relative;
+  margin-top: -68px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "bh sh"
+    "br sr";
+  column-gap: 24px;
+}
+.hd .hd-door-bg {
+  display: block;
+  background: var(--hd-paper);
+  border: 1px solid var(--hd-line);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(7, 49, 38, 0.12);
+}
+.hd .hd-door-bg-buy {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  border-top: 5px solid var(--hd-accent);
+}
+.hd .hd-door-bg-sell {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  border-top: 5px solid var(--hd-support);
+}
+.hd .hd-door-head {
+  position: relative;
+  padding: 30px 30px 0;
+}
+.hd .hd-door-buy {
+  grid-area: bh;
+}
+.hd .hd-door-sell {
+  grid-area: sh;
+}
+.hd .hd-door-rows {
+  position: relative;
+  padding: 0 30px 18px;
+}
+.hd .hd-door-rows-buy {
+  grid-area: br;
+}
+.hd .hd-door-rows-sell {
+  grid-area: sr;
+}
+.hd .hd-door-h {
+  font-size: 44px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--hd-forest);
+  font-variation-settings: "opsz" 144;
+}
+.hd .hd-door-note {
+  margin-top: 10px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  color: var(--hd-muted);
+}
+.hd .hd-door-step {
+  margin: 22px 0 10px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--hd-accent);
+}
+.hd .hd-door-sell .hd-door-step {
+  color: var(--hd-support);
+}
+.hd .hd-door-rows-h {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.hd .hd-c-rent {
+  padding-bottom: 36px;
+}
+@media (max-width: 759px) {
+  .hd-c .hd-c-band {
+    padding-bottom: 76px;
+  }
+  .hd .hd-doors {
+    margin-top: -52px;
+    column-gap: 10px;
+    grid-template-areas:
+      "bh sh"
+      "br br"
+      "sr sr";
+  }
+  .hd .hd-door-bg-buy,
+  .hd .hd-door-bg-sell {
+    grid-row: 1;
+    border-radius: 14px;
+  }
+  .hd .hd-door-head {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 12px 12px;
+  }
+  .hd .hd-door-h {
+    font-size: 28px;
+  }
+  .hd .hd-door-note,
+  .hd .hd-door-head .hd-cta-detail {
+    display: none;
+  }
+  .hd .hd-door-step {
+    margin: 8px 0 12px;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+  }
+  .hd .hd-door-head .hd-btn-cta {
+    margin-top: auto;
+    width: 100%;
+    padding: 10px 8px;
+    font-size: 15px;
+  }
+  .hd .hd-door-rows {
+    padding: 26px 0 0;
+  }
+  .hd .hd-door-rows-h {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--hd-forest);
+  }
+  .hd .hd-door-rows .hd-rows {
+    margin-top: 10px;
+  }
+}
+
+/* ── review bar (tooling, outside the hero) ─────────────────────────── */
+.home-v2 .hd-review {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border-top: 1px solid #dcd8cf;
+  border-bottom: 1px solid #dcd8cf;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 14px;
+  color: #535c57;
+}
+.home-v2 .hd-review-tag {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 13px;
+  color: #1c2621;
+}
+.home-v2 .hd-review-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.home-v2 .hd-review a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #dcd8cf;
+  color: #1c2621;
+}
+.home-v2 .hd-review a[aria-current="true"] {
+  background: #073126;
+  border-color: #073126;
+  color: #ffffff;
+}
