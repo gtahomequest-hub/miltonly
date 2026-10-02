@@ -1,0 +1,113 @@
+
+═══ MILTONLY STREET VERIFICATION ═══
+target      http://localhost:3127
+build       6a8a65f served == expected
+sitemap     719 published street pages (derived, not a literal)
+streets     full crawl (--streets=sample for the fixed set plus a rotating fifty)
+hub record  22 published hubs + DB2 pools loaded
+home record 719 published street pages + Milton-wide figures loaded
+crawled     0 street pages (no per-page check selected)
+
+── The homepage links, states its figures, and declares itself
+   · unique internal links served: 139
+   · of which are in the <nav>: 129
+   · stated link floor: 50
+   · data-fig figures parsed: 87
+   · Milton-wide figures checked by value + format: 8 specs
+   · as rendered: on-market: "488" (source 488, expected "488") · new-week: "63" (source 63, expected "63") · rentals-available: "1,281" (source 1281, expected "1,281") · proof-street-pages: "719" (source 719, expected "719") · menu-buy-active: "488" (source 488, expected "488") · menu-buy-new: "63" (source 63, expected "63") · menu-streets-pages: "719" (source 719, expected "719") · menu-rent-now: "1,281" (source 1281, expected "1,281")
+   · published street pages (record): 719
+   · rentals available: homepage / /rentals / record: 1281 / 1281 / 1281
+   · VOW-derived figures found (must be none): none
+   · published StreetContent rows (record): 722
+   · neighbourhood ladder rungs (active count): 22 of 22 published hubs
+   · neutral line: body / menu: 1 / 1
+   · JSON-LD nodes parsed: 4
+   PASS  homepage returns 200: 200
+   PASS  unique internal links >= 50: true
+   PASS  neighbourhood ladder rungs found: true
+   PASS  chrome contract: labelled nav, skip link, GET search, <details> menu, map footer with the brief form: 0
+   PASS  menu triggers rendered as buttons: 0
+   PASS  menu trigger hrefs in served nav markup: 0
+   PASS  rail links in served nav markup: 0
+   PASS  Milton-wide figures absent from the page: 0
+   PASS  Milton-wide figures rendered in the wrong format: 0
+   PASS  Milton-wide figures outside their source + tolerance: 0
+   PASS  street-page figure == the published page count: true
+   PASS  /rentals returns 200: 200
+   PASS  /favicon.ico is a 200 ICO that is not the default triangle: true
+   PASS  /icon.svg is a 200 SVG of the wordmark M on the forest ground: true
+   PASS  homepage rentals figure == the figure /rentals publishes: true
+   PASS  VOW-derived data-fig figures on the page (MC-046): 0
+   PASS  VOW-derived markup or wording on the page (MC-046): 0
+   PASS  VOW-derived keys in the RSC payload (MC-046): 0
+   PASS  ladder rungs == published hubs: 22
+   PASS  ladder rungs out of order (active count desc, ties A to Z): 0
+   PASS  neutral line in the body, outside the menu: 1
+   PASS  any data-fig rendering a raw float: 0
+   PASS  em-dashes in rendered copy: 0
+   PASS  en-dashes outside a numeric range: 0
+   PASS  WebSite node present: true
+   PASS  Organization node present: true
+   PASS  SearchAction on the WebSite node: true
+   NOTE  published pages 719 vs published content rows 722: the difference is content published for a slug with no ResidentialStreet entity, which the sitemap refuses
+
+── The menu opens, closes, fits, reads, and links, on every page type and at every width
+   · page types read: / ok · /streets ok · /neighbourhoods/bronte-meadows ok · /streets/mccready-drive-milton ok · /listings ok
+   · unique panel hrefs resolved: 143
+   · browser runs (page × width): 24 of 24
+   · published hubs (record): 22
+   PASS  page types read == requested: 5
+   PASS  menu triggers rendered as <button> with aria: 0
+   PASS  panels present in served HTML and closed with hidden: 0
+   PASS  every panel carries its index CTA: 0
+   PASS  rail tabs and item panels served as stated (one selected, one visible): 0
+   PASS  rail items whose served panel is empty: 0
+   PASS  every panel carries a strip: 0
+   PASS  pages whose four strips are not all different: 0
+   PASS  menu figures in the wrong format: 0
+   PASS  pages missing a hub count: 0
+   PASS  panel hrefs that redirect: 0
+   PASS  panel hrefs that fail: 0
+   PASS  served chrome lacks the label, the skip link, the bar search form, the <details> menu or its compact menu: 0
+   PASS  pages whose CTA or strips do not follow the street or the hub: 0
+   PASS  pages whose rail tabs lack sub-labels: 0
+   PASS  Rent menu: every hub as scoped /rentals with its count, the landlord form, Rentals out of Buy: 0
+   PASS  VOW-derived figures, blocks, links or wording in the nav, or the neutral line misplaced (MC-046): 0
+   PASS  browser runs completed: 24
+   PASS  interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, bar search, CTA contrast, no-JS): 0
+
+── At 390 no text is clipped by the viewport on the home, street, hub, listing, rentals and guide pages
+   · pages read at 390: home ok · street ok · hub ok · listing ok · rentals ok · guide ok
+   · browser runs: 6 of 6
+   PASS  pages rendered at 390: 6
+   PASS  pages that scroll sideways: 0
+   PASS  text nodes clipped by the viewport: 0
+   PASS  the street ladder at 390: a house-number field, a track no taller than the viewport that scrolls inside itself: 0
+
+── The address flag is honoured on every surface, no search exceeds 100 results, the bona fide notice is on every page, no date precedes 2003, the feed is fresh
+   · DB1 rows with the address withheld (permAdvertise true): 6
+   · surfaces read for them: 22
+   · /listings: cards on page one · last page linked · map pins: 36 · 2 · 100
+   · /listings?status=rent: cards on page one · last page linked · map pins: 36 · 1 · 100
+   · /sold: sold rows in its 90-day window (the list takes at most 60): 1247
+   · page types read for the registrant header (MC-047): 29
+   · page types read for the notices: 12
+   · oldest dates: DB1 listedAt, DB2 sold_date, DB2 list_date, DB3 year: 2025-04-23 · 2024-04-29 · 2024-04-18 · 2024
+   · newest syncedAt on an active DB1 row: 2026-10-02 10:04 (11.2 h ago)
+   · listing pages read for the 8.24 and 8.16 lines (the listing page and the sale ad): 2
+   · guides read (indexed of linked): 6 of 6
+   PASS  withheld addresses, house numbers, street links or coordinates on a public surface: 0
+   PASS  consumer search surfaces reaching past 100 results: 0
+   PASS  page types without the registrant and the brokerage in the header: 0
+   PASS  page types without this year's TRREB and PropTx copyright line: 0
+   PASS  page types with TREB-era wording in the text or the meta: 0
+   PASS  page types without the verbatim bona fide notice: 0
+   PASS  page types without the reliability notice (8.25): 0
+   PASS  oldest date across DB1, DB2 and DB3 on or after 2003-01-01: true
+   PASS  active listings refreshed within 26 hours: true
+   PASS  listing pages without the 8.24 label or the 8.16 report line: 0
+   PASS  MC-046 Stage 1 removals not held on /sold, Market Watch, the guides, /listings, the listing page, /api/street-stats: 0
+   PASS  signed-out pages carrying a data-vow attribute: 0
+   NOTE  the address flag is InternetAddressDisplayYN; the permission flag (InternetEntireListingDisplayYN, permAdvertise) is asserted by vow-fields; AMPRE exposes no third flag
+
+═══ PASS · 4 checks · 719 pages · 164s ═══

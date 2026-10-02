@@ -1,0 +1,24 @@
+### --explain=/design-preview/home?c
+html separator …n>#</span></a></li><li><a href="/streets?letter=W"><b>W</b><span>##</span></a></li><li><span class="m-mega-az-off" aria-label="X: no street pages"><b>X</b><span>—</span></span></li…
+exit 0
+### --explain=/design-preview/home?c&p2
+html separator …n>#</span></a></li><li><a href="/streets?letter=W"><b>W</b><span>##</span></a></li><li><span class="m-mega-az-off" aria-label="X: no street pages"><b>X</b><span>—</span></span></li…
+exit 0
+### --explain=/design-preview/home?c&p3
+html separator …n>#</span></a></li><li><a href="/streets?letter=W"><b>W</b><span>##</span></a></li><li><span class="m-mega-az-off" aria-label="X: no street pages"><b>X</b><span>—</span></span></li…
+exit 0
+### --explain=/design-preview/home?d
+html separator …n>#</span></a></li><li><a href="/streets?letter=W"><b>W</b><span>##</span></a></li><li><span class="m-mega-az-off" aria-label="X: no street pages"><b>X</b><span>—</span></span></li…
+exit 0
+### --explain=/design-preview/home?d&p2
+html separator …n>#</span></a></li><li><a href="/streets?letter=W"><b>W</b><span>##</span></a></li><li><span class="m-mega-az-off" aria-label="X: no street pages"><b>X</b><span>—</span></span></li…
+exit 0
+### --explain=/design-preview/home?d&p3
+html separator …n>#</span></a></li><li><a href="/streets?letter=W"><b>W</b><span>##</span></a></li><li><span class="m-mega-az-off" aria-label="X: no street pages"><b>X</b><span>—</span></span></li…
+exit 0
+?option=c&palette=1 marker html=false rsc=false jsonld=0
+?option=c&palette=2 marker html=false rsc=false jsonld=0
+?option=c&palette=3 marker html=false rsc=false jsonld=0
+?option=d&palette=1 marker html=false rsc=false jsonld=0
+?option=d&palette=2 marker html=false rsc=false jsonld=0
+?option=d&palette=3 marker html=false rsc=false jsonld=0

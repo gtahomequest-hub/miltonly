@@ -2,24 +2,26 @@ HOME · D:\miltonly-home · feat/home-hero-design
 
 # Handoff, homepage worktree
 
-_Last rewritten 2026-10-02, MH-012: the homepage hero designed at `/design-preview/home` on `feat/home-hero-design`, previewed, a design for review, NOT for merge. MH-011 below is unchanged and still waiting for review._
+_Last rewritten 2026-10-02, MH-013: option D and an orange, navy and white brand over the whole preview page, at `/design-preview/home` on `feat/home-hero-design`, previewed, a design for review, NOT for merge. MH-011 below is unchanged and still waiting for review._
 
 ## READ THIS FIRST
 
 **TWO HOME BRANCHES ARE PREVIEWED DESIGNS, NOT MERGE CANDIDATES. Core merges by SHA on approval (DEC-MERGE-CORE-ONLY); neither has been approved.**
 
-- **`feat/home-hero-design @ c7fd3ee` (MH-012, the homepage hero). A DESIGN FOR REVIEW.**
-  - **Branch and preview.** Cut from `origin/main @ f0b8bb7` (contains `aa8c9d8`, MC-046 Stage 1). Preview
-    `https://miltonly-hokave4jn-gtahomequest-hubs-projects.vercel.app/design-preview/home` (`dpl_GbM2NFDdwKLpYuf6D99kHszMKwJz`), the only one.
-    `?option=a|b|c` switches the hero: A Road, B Sentences, C Doors. A bare `?b` or `?c` does the same (for the leak test's `--explain`).
-  - **What it is.** The live homepage with a new hero: the real `SiteNav` (registrant strip), the hero, then `HomePage`'s own sections on the same live
-    data. Noindex, nofollow, nocache; not in the sitemap; not linked. `src/components/home/*` and `src/app/page.tsx` are untouched.
-  - **The links** are one list, `src/components/home-design/links.ts`: 5 page targets (all 200), 1 phone number, 1 in-page focus of the search, 2 planned
-    (`/invest`, `/sell-and-buy`, drawn and marked, not links). Every link carries `data-hero-side` and `data-hero-intent`.
-  - **The gate.** Local gate exit 0, 0 `P2024`, 842/842. Local battery at `c7fd3ee` `--only=homepage,nav,phone-390,vow-display` `PASS · 4 checks · 719 pages · 184s`.
-    Preview battery `--only=homepage,nav,phone-390,vow-display,leak` `PASS · 5 checks · 719 pages · 1065s`. Leak test on the preview `CLEAN · 6170 responses · 0 findings`; `--explain` on each option: 0 value and 0 class findings.
-    `scratchpad/mh012/verify.mjs` PASS locally and on the preview.
-  - **The pick is C, Doors.** Record in `scratchpad/reports/MH-012-home-hero-design.md`.
+- **`feat/home-hero-design @ 6a8a65f` (MH-013, on top of MH-012's `c7fd3ee`). A DESIGN FOR REVIEW.**
+  - **Branch and preview.** `origin/main` is still `f0b8bb7` (contains `aa8c9d8`); the branch already had it, so MH-013 merged nothing. Preview
+    `https://miltonly-or9axq97u-gtahomequest-hubs-projects.vercel.app/design-preview/home` (`dpl_HqQVAoQTdAAaEtFQQbtoBa2HZCMx`), the only MH-013 one.
+    `?option=c|d` (Doors, Four paths), `?palette=1|2|3` (Harbour, Midnight, Slate), `?wordmark=serif|script`; bare keys `?d&p2&script` do the same.
+    Default is the pick: D, palette 1, serif.
+  - **What it is.** The live homepage with a new hero, the whole page recoloured: `tokens.ts` writes the palette as `--b-*` variables on the page's
+    root, `home-design.css` (the hero) and `brand-preview.css` (the nav, sections, footer, scoped to `.bp`) read only those. No green anywhere on the
+    preview (computed-colour scan, 18 runs). `src/components/home/*`, `src/components/nav/*` and `src/app/page.tsx` are untouched.
+  - **The links** (`links.ts`): Selling first; 5 page targets all 200; 2 planned (`/invest` as D's third door, `/sell-and-buy`), drawn, not links.
+  - **The gate.** Local gate exit 0, 0 `P2024`, 843/843. Local battery at `6a8a65f` `--only=homepage,nav,phone-390,vow-display` `PASS · 4 checks · 719 pages · 164s`.
+    Preview battery `--only=homepage,nav,phone-390,vow-display,leak` `PASS · 5 checks · 719 pages · 1197s`. Leak `CLEAN · 6170 responses · 0 findings`; `--explain` on all six option and palette pairs: 0 value and 0 class findings.
+    `scratchpad/mh013/verify.mjs` (the whole page, every option, palette and width) PASS locally and on the preview.
+  - **The pick is D, palette 1 (Harbour), serif wordmark.** Record in `scratchpad/reports/MH-013-home-hero-orange-navy.md`; MH-012's in
+    `scratchpad/reports/MH-012-home-hero-design.md` (its preview `miltonly-hokave4jn` still shows options A, B and C in green).
 - **`feat/street-design @ f5b3bab` (MH-011, the street page design). A DESIGN FOR REVIEW.** Preview
   `https://miltonly-afug36ojd-gtahomequest-hubs-projects.vercel.app/design-preview/street`, `?palette=a|b|c`, `?view=visitor|registered`. Its own
   `HANDOFF-home.md` is on that branch (`ff09e13`). Record in `scratchpad/reports/MH-011-street-design.md`.
@@ -126,7 +128,16 @@ metadata of 19 `src/app/**/page.tsx` files and `src/app/layout.tsx`. The full li
 - Everything in MH-002 to MH-009's trap lists still holds for the menu, the hub and the analytics mount.
 
 
-## MH-012 traps
+## MH-012 and MH-013 traps
+
+- **`next/og` fails on this Windows dev server** ("Invalid URL" from `ImageResponse`). The preview's tab icon is a static `icon.svg` in its segment,
+  written from `tokens.ts` by `scratchpad/mh013/make-icon.ts`, and the page's own `icons` metadata points at it.
+- **`app/favicon.ico` is emitted on every route** by the file convention; a segment cannot remove it. The preview adds its navy SVG after it.
+- **The home nav's bar search is a white field** (`.home-v2 .m-navsearch`, `--m-surface`); the page variant's is dark. Recolour them apart.
+- **The valuation card loses its padding on the live homepage** (`.home-v2 *` resets Tailwind's `p-6` and `px-3`; production computes 0px). Fixed
+  only in the preview scope. A live fix is a Home task.
+- **Tailwind classes are matched by their text** in the preview (`[class*="text-[#017848]"]`), so the rebrand scope counts those selectors apart.
+- **The Bash heredoc still collapses backslashes**: regex edits go through the Edit tool or a script file.
 
 - **A preview never reaches network idle.** Puppeteer's `networkidle0` timed out at 120s on `miltonly-hokave4jn`; the MH-012 scripts wait for
   `load`, the fonts and 800ms instead.
@@ -140,17 +151,21 @@ metadata of 19 `src/app/**/page.tsx` files and `src/app/layout.tsx`. The full li
 
 | | |
 |---|---|
-| MH-012 work | **`c7fd3ee14bc4f93098fa0ae080194fc6f3e01025`** (`feat/home-hero-design`), plus the docs commit with this file, the report and the proofs |
-| MH-012 preview | `https://miltonly-hokave4jn-gtahomequest-hubs-projects.vercel.app/design-preview/home` |
+| MH-013 work | **`6a8a65f29b596efaf189370a34cf85814d25a7fb`** (`feat/home-hero-design`), plus the docs commit with this file, the report and the proofs |
+| MH-013 preview | `https://miltonly-or9axq97u-gtahomequest-hubs-projects.vercel.app/design-preview/home` |
+| MH-012 work | `c7fd3ee`, docs `3faafd9`; preview `miltonly-hokave4jn` |
 | MH-011 work | `f5b3bab` (`feat/street-design`), docs `ff09e13` |
-| main | `f0b8bb7` (the 2026-10-02 morning report), production `aa8c9d8`; has neither design |
+| main | `f0b8bb7` (the 2026-10-02 morning report), production `aa8c9d8`; has no design |
 
 ## Open, and owned elsewhere
 
-- **Review** of both designs: Aamir. If MH-012 is approved, building the hero on `/` is its own brief: the H1 and hero swap on `src/app/page.tsx`,
-  a GA4 listener for the `data-hero-*` attributes, and the two planned pages (`/invest`, `/sell-and-buy`) as separate briefs.
-- **The brief's sender** (R17): Leads. **The nav's X cell**: whoever next takes the nav.
+- **Review** of the designs: Aamir. If D is approved, the build is its own brief: the hero on `src/app/page.tsx`, a GA4 listener for the
+  `data-hero-*` attributes, and a site-wide rebrand sized by `scratchpad/mh013/rebrand-scope.md` (916 green values in 73 files, 109 CSS variables,
+  377 Tailwind classes, emails, the OG route, the icon set, one battery assertion). `/invest` and `/sell-and-buy` are briefs of their own.
+- **Live defects found, not fixed:** the homepage valuation card's 0px padding (Home); `/rentals` opens its grid on "46 match filters" under a
+  "1281 active rentals" headline (Leads or Core); the nav's A to Z prints an em-dash for X (whoever next takes the nav).
+- **The brief's sender** (R17): Leads.
 
 ## Next action
 
-Aamir reviews the MH-012 preview and picks an option (the report has the URL, the link table and the pick). Nothing to merge.
+Aamir reviews the MH-013 preview and picks a layout, palette and wordmark (the report has the URL, the contrast table and the pick). Nothing to merge.
