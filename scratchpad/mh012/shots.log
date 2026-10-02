@@ -1,0 +1,96 @@
+[
+ {
+  "option": "a",
+  "w": 1280,
+  "file": "scratchpad/mh012/shots/a-desktop-1280-first-screen.png",
+  "status": 200
+ },
+ {
+  "option": "a",
+  "w": 1280,
+  "file": "scratchpad/mh012/shots/a-desktop-1280-hero.png"
+ },
+ {
+  "option": "a",
+  "w": 390,
+  "file": "scratchpad/mh012/shots/a-phone-390-first-screen.png",
+  "status": 200
+ },
+ {
+  "option": "a",
+  "w": 390,
+  "file": "scratchpad/mh012/shots/a-phone-390-hero.png"
+ },
+ {
+  "option": "a",
+  "w": 390,
+  "file": "scratchpad/mh012/shots/a-phone-390-selling-lane.png"
+ },
+ {
+  "option": "a",
+  "w": 360,
+  "file": "scratchpad/mh012/shots/a-small-360-first-screen.png",
+  "status": 200
+ },
+ {
+  "option": "b",
+  "w": 1280,
+  "file": "scratchpad/mh012/shots/b-desktop-1280-first-screen.png",
+  "status": 200
+ },
+ {
+  "option": "b",
+  "w": 1280,
+  "file": "scratchpad/mh012/shots/b-desktop-1280-hero.png"
+ },
+ {
+  "option": "b",
+  "w": 390,
+  "file": "scratchpad/mh012/shots/b-phone-390-first-screen.png",
+  "status": 200
+ },
+ {
+  "option": "b",
+  "w": 390,
+  "file": "scratchpad/mh012/shots/b-phone-390-hero.png"
+ },
+ {
+  "option": "b",
+  "w": 360,
+  "file": "scratchpad/mh012/shots/b-small-360-first-screen.png",
+  "status": 200
+ },
+ {
+  "option": "c",
+  "w": 1280,
+  "file": "scratchpad/mh012/shots/c-desktop-1280-first-screen.png",
+  "status": 200
+ },
+ {
+  "option": "c",
+  "w": 1280,
+  "file": "scratchpad/mh012/shots/c-desktop-1280-hero.png"
+ },
+ {
+  "option": "c",
+  "w": 390,
+  "file": "scratchpad/mh012/shots/c-phone-390-first-screen.png",
+  "status": 200
+ },
+ {
+  "option": "c",
+  "w": 390,
+  "file": "scratchpad/mh012/shots/c-phone-390-hero.png"
+ },
+ {
+  "option": "c",
+  "w": 360,
+  "file": "scratchpad/mh012/shots/c-small-360-first-screen.png",
+  "status": 200
+ },
+ {
+  "option": "c",
+  "w": 390,
+  "file": "scratchpad/mh012/shots/c-phone-390-search-typed.png"
+ }
+]

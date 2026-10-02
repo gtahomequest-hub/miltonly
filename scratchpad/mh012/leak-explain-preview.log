@@ -1,0 +1,24 @@
+### --explain=/design-preview/home
+═══ MC-046 LEAK TEST ═══
+target   https://miltonly-hokave4jn-gtahomequest-hubs-projects.vercel.app
+build    c7fd3ee
+html separator …n>#</span></a></li><li><a href="/streets?letter=W"><b>W</b><span>##</span></a></li><li><span class="m-mega-az-off" aria-label="X: no street pages"><b>X</b><span>—</span></span></li…
+exit 0
+### --explain=/design-preview/home?b
+═══ MC-046 LEAK TEST ═══
+target   https://miltonly-hokave4jn-gtahomequest-hubs-projects.vercel.app
+build    c7fd3ee
+html separator …n>#</span></a></li><li><a href="/streets?letter=W"><b>W</b><span>##</span></a></li><li><span class="m-mega-az-off" aria-label="X: no street pages"><b>X</b><span>—</span></span></li…
+exit 0
+### --explain=/design-preview/home?c
+═══ MC-046 LEAK TEST ═══
+target   https://miltonly-hokave4jn-gtahomequest-hubs-projects.vercel.app
+build    c7fd3ee
+html separator …n>#</span></a></li><li><a href="/streets?letter=W"><b>W</b><span>##</span></a></li><li><span class="m-mega-az-off" aria-label="X: no street pages"><b>X</b><span>—</span></span></li…
+exit 0
+?option=a html=203071B rsc=94587B data-vow(html)=1 data-vow(rsc)=1 ld+json=0
+?option=b html=202630B rsc=94587B data-vow(html)=1 data-vow(rsc)=1 ld+json=0
+?option=c html=202842B rsc=94587B data-vow(html)=1 data-vow(rsc)=1 ld+json=0
+?option=a marker html=false rsc=false jsonld=0
+?option=b marker html=false rsc=false jsonld=0
+?option=c marker html=false rsc=false jsonld=0

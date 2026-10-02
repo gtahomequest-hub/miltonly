@@ -1,0 +1,15 @@
+a 360x640: 200 robots="noindex, nofollow, nocache" strip=14px links=10 planned=2 texts=22 minContrast=5.05 placeholder=6.92 green=[Book a showing] smallTargets=0 overflow=0 firstScreen={"buy":true,"sell":true,"buyBottom":538,"sellBottom":432,"searchBottom":344}
+a 390x844: 200 robots="noindex, nofollow, nocache" strip=14px links=10 planned=2 texts=22 minContrast=5.05 placeholder=6.92 green=[Book a showing] smallTargets=0 overflow=0 firstScreen={"buy":true,"sell":true,"buyBottom":538,"sellBottom":432,"searchBottom":344}
+a 1280x800: 200 robots="noindex, nofollow, nocache" strip=14px links=10 planned=2 texts=35 minContrast=5.05 placeholder=6.92 green=[Book a showing | Get my home's value] smallTargets=0 overflow=0 firstScreen={"buy":true,"sell":true,"buyBottom":573,"sellBottom":573,"searchBottom":294}
+b 360x640: 200 robots="noindex, nofollow, nocache" strip=14px links=10 planned=2 texts=37 minContrast=5.05 placeholder=6.92 green=[Book a showing | Get my home's value] smallTargets=0 overflow=0 firstScreen={"buy":true,"sell":true,"buyBottom":610,"sellBottom":294,"searchBottom":406}
+b 390x844: 200 robots="noindex, nofollow, nocache" strip=14px links=10 planned=2 texts=37 minContrast=5.05 placeholder=6.92 green=[Book a showing | Get my home's value] smallTargets=0 overflow=0 firstScreen={"buy":true,"sell":true,"buyBottom":610,"sellBottom":294,"searchBottom":406}
+b 1280x800: 200 robots="noindex, nofollow, nocache" strip=14px links=10 planned=2 texts=34 minContrast=5.05 placeholder=6.92 green=[Book a showing | Get my home's value] smallTargets=0 overflow=0 firstScreen={"buy":true,"sell":true,"buyBottom":551,"sellBottom":551,"searchBottom":294}
+c 360x640: 200 robots="noindex, nofollow, nocache" strip=14px links=8 planned=2 texts=34 minContrast=5.05 placeholder=6.92 green=[Book a showing | Get my home's value] smallTargets=0 overflow=0 firstScreen={"buy":true,"sell":true,"buyBottom":508,"sellBottom":508,"searchBottom":344}
+c 390x844: 200 robots="noindex, nofollow, nocache" strip=14px links=8 planned=2 texts=34 minContrast=5.05 placeholder=6.92 green=[Book a showing | Get my home's value] smallTargets=0 overflow=0 firstScreen={"buy":true,"sell":true,"buyBottom":508,"sellBottom":508,"searchBottom":344}
+c 1280x800: 200 robots="noindex, nofollow, nocache" strip=14px links=8 planned=2 texts=37 minContrast=5.05 placeholder=6.92 green=[Book a showing | Get my home's value] smallTargets=0 overflow=0 firstScreen={"buy":true,"sell":true,"buyBottom":565,"sellBottom":565,"searchBottom":294}
+?b: 200 option=b
+?c: 200 option=c
+/sitemap.xml: 200 mentions design-preview: false
+/robots.txt: 200 mentions design-preview: false
+/: 200 mentions design-preview: false
+PASS
