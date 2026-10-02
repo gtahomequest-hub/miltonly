@@ -17,63 +17,28 @@
 // set, before it can ship.
 
 import { config } from "@/lib/config";
-import { hubDisplayTypical } from "@/lib/ai/hub/hubMeta";
 import type { HubGeneratorInput, HubProjectedStreet, HubSchemaProjection } from "@/types/hub-generator";
-
-export interface ProjectedStreetListItem {
-  position: number;       // 1-based, currentRank order, VIP first
-  slug: string;
-  displayName: string;    // expandStreetName-normalized
-  shortName?: string | null;
-  url: string;            // /streets/[slug] (WS5 URL policy — preserved)
-  isVip: boolean;
-  soldCount12mo: number;
-}
-
-export interface ProjectedStreetsSection {
-  neighbourhoodName: string;
-  items: ProjectedStreetListItem[];
-  vipCount: number;
-  totalCount: number;
-}
 
 function streetUrl(slug: string): string {
   // WS5 URL policy (ADR 0001 DEC-6): residential streets keep /streets/[slug].
   return `/streets/${slug}`;
 }
 
-/**
- * Server-rendered street list for the streets-in-this-neighbourhood section.
- * The LLM writes only the surrounding connective prose; the renderer interleaves
- * THIS list. Names come straight from the entity array — the model cannot author
- * a street name that is not present here.
- */
-export function projectStreetsSection(input: HubGeneratorInput): ProjectedStreetsSection {
-  const items: ProjectedStreetListItem[] = input.projectedStreets.map((s, i) => ({
-    position: i + 1,
-    slug: s.slug,
-    displayName: s.displayName,
-    shortName: s.shortName,
-    url: streetUrl(s.slug),
-    isVip: s.isVip,
-    soldCount12mo: s.soldCount12mo,
-  }));
-  return {
-    neighbourhoodName: input.neighbourhood.name,
-    items,
-    vipCount: input.vipStreetCount,
-    totalCount: input.streetCount,
-  };
-}
+// MC-046: projectStreetsSection (and its ProjectedStreetListItem, which carried each street's
+// 12-month sold count) had no caller and was removed; the hub renders its ladder from
+// hubStreetLadder.ts, ordered by active listings.
 
 /**
- * Schema markup projected from the same input as the gated body. No field may
- * contradict the gated prose (DEC-WS4-2). aggregatePrice is emitted ONLY when
- * the neighbourhood typicalPrice cleared k-anon (non-null), so the schema never
- * advertises a price the body had to suppress.
+ * Schema markup projected from what the hub page renders. No field may contradict the page
+ * (DEC-WS4-2).
+ *
+ * MC-046 Stage 1 (PropTx VOW Best Practices item 40): Place.aggregatePrice is never emitted. It
+ * carried the hub's typical SOLD price, a value derived from VOW records, and JSON-LD is served
+ * to everyone. The projector takes only the neighbourhood name and the street list, so no sold
+ * aggregate can reach it.
  */
 export function projectHubSchema(
-  input: HubGeneratorInput,
+  input: { neighbourhood: { name: string }; projectedStreets: ReadonlyArray<{ slug: string; displayName: string }> },
   renderedStreets?: ReadonlyArray<{ name: string; slug: string }>,
 ): HubSchemaProjection {
   // The ItemList MUST mirror what the hub PAGE renders — its published-only, capped
@@ -102,20 +67,6 @@ export function projectHubSchema(
       })),
     },
   };
-  // Rounded through the SAME round5k the hero tile and the meta description use.
-  // The k-anon gate above was always right; the rounding was not — the schema was
-  // handing Google the raw pool mean (972775 for Beaty) while the page published
-  // $975K, so the machine-readable twin was strictly more precise than the page it
-  // is supposed to mirror. JSON-LD is a published surface: it gets the published
-  // figure, not the one behind it.
-  const schemaPrice = hubDisplayTypical(input.aggregates.typicalPrice);
-  if (schemaPrice !== null) {
-    schema.aggregatePrice = {
-      "@type": "PriceSpecification",
-      priceCurrency: "CAD",
-      price: schemaPrice,
-    };
-  }
   return schema;
 }
 

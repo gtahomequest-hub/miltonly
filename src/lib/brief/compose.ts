@@ -33,7 +33,7 @@ import "server-only";
 // changed", so a day on which nothing changed is a day with no email. See shouldSend.
 
 import { prisma } from "@/lib/prisma";
-import { getSoldDb } from "@/lib/db";
+import { soldDb, scopedVowAccess } from "@/lib/vow/door";
 import { config } from "@/lib/config";
 import { K_ANON_PRICE } from "@/lib/kAnon";
 import { resolveStreetName } from "@/lib/streetName";
@@ -136,7 +136,7 @@ interface SoldRead {
 // src/lib/brief/window.ts and marketWatch/windows.ts, "TWO BASES FOR ONE WEEK". The NOW() bound
 // is Market Watch's Ruling 10: the table carries rows dated into 2027.
 async function soldInWindow(win: BriefWindow): Promise<SoldRead> {
-  const db = getSoldDb();
+  const db = soldDb(scopedVowAccess());
   if (!db) return { count: 0, typicalPrice: null, streets: [] };
   const rows = (await db`
     SELECT street_slug, neighbourhood, sold_price

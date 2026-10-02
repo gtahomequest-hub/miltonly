@@ -1,4 +1,4 @@
-import { getSoldDb } from '@/lib/db';
+import { getSoldDb } from './lib/vow-db';
 
 (async () => {
   const sd = getSoldDb();

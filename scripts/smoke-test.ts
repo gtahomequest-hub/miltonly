@@ -26,6 +26,12 @@
 import { readFileSync } from "node:fs";
 import { spawn, type ChildProcess } from "node:child_process";
 import crypto from "node:crypto";
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 
 const SLUG = "main-st-e-milton";
 const PAGE_URL = `http://localhost:3000/streets/${SLUG}`;

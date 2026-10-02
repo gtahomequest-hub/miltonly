@@ -247,7 +247,8 @@
   box-shadow: var(--lv-sh-lg);
   padding: 26px 34px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* three tiles since MC-046 Stage 1 removed "Avg days on market" (DOM is a VOW field) */
+  grid-template-columns: repeat(3, 1fr);
   gap: 26px;
 }
 .listings-v2 .lv-stat .lv-stat-l {
@@ -270,7 +271,7 @@
 }
 @media (max-width: 860px) {
   .listings-v2 .lv-statsband .lv-card {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 20px;
     padding: 22px 24px;
   }

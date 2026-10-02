@@ -72,7 +72,9 @@ export async function loadHubRecord() {
   }
   const activeByRaw = new Map();
   for (const r of await app`SELECT neighbourhood, COUNT(*)::int n FROM public."Listing"
-                            WHERE "permAdvertise" = TRUE AND status = 'active' GROUP BY 1`) activeByRaw.set(r.neighbourhood, Number(r.n));
+                            WHERE "permAdvertise" = TRUE AND status = 'active' AND city = 'Milton'
+                              AND ("transactionType" IS NULL OR "transactionType" <> 'For Lease')
+                            GROUP BY 1`) activeByRaw.set(r.neighbourhood, Number(r.n)); // PUBLIC_SALE_WHERE (MC-046)
   const pagesByNbhd = new Map(), filmedByNbhd = new Map(), pageSlugsByNbhd = new Map();
   for (const r of await app`SELECT rs."neighbourhoodId" nid, rs.slug,
                                    (sc."videoUrl" IS NOT NULL OR sc."nightVideoUrl" IS NOT NULL) filmed

@@ -17,15 +17,20 @@
 //      that was true of all of Milton.
 //
 // STREETS LINK DOWN IN THREE RUNGS, video first: the filmed strip (01), the ladder of every
-// published street, marking which are filmed and carrying each street page's own typical (02),
-// and the A-to-Z index (03): the hub's own overflow page above the cap, the Milton-wide
-// directory below it.
+// published street, marking which are filmed, ordered by homes for sale today (02), and the
+// A-to-Z index (03): the Milton-wide directory.
+//
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40). Every value derived from VOW records left
+// this template: the glance typical, the type share of sales, the ladder's sold count, typical
+// and basis, the market section (Milton compare, commentary, source line) and the nearby hubs'
+// typicals and counts. The market section is gone whole, heading and number with it. In its
+// place, in the glance where the typical stood, the page carries the one neutral line.
 //
 // SECTION NUMBERS ARE COMPUTED. A section that does not render (no clip, no school, no condo)
 // leaves no gap in the count, so a reader never sees 01 followed by 03.
 import type { HubData, HubStreetCard, HubSibling, HubFact } from './types';
-import { compactPrice } from './format';
 import { IconTag, IconHome, IconPeople, IconKey, IconInvest } from './icons';
+import SoldHistoryLine from '@/components/vow/SoldHistoryLine';
 
 /* ── the repeated device ───────────────────────────────────────────────── */
 
@@ -53,7 +58,7 @@ function SectionHead({
 }
 
 /** The order sections render in, and which of them this hub has. Numbering is derived from it. */
-const SECTION_ORDER = ['film', 'streets', 'about', 'market', 'schools', 'condos', 'questions', 'nearby', 'talk'] as const;
+const SECTION_ORDER = ['film', 'streets', 'about', 'schools', 'condos', 'questions', 'nearby', 'talk'] as const;
 type SectionKey = (typeof SECTION_ORDER)[number];
 function rendered(data: HubData, key: SectionKey): boolean {
   switch (key) {
@@ -86,12 +91,10 @@ export function HubBreadcrumb({ name }: { name: string }) {
 /* ── hero ──────────────────────────────────────────────────────────────── */
 
 const FACT_ICONS: Record<string, React.ReactNode> = {
-  typical: <IconTag />,
   pages: <IconHome />,
   video: <IconInvest />,
   schools: <IconPeople />,
   active: <IconKey />,
-  stock: <IconHome />,
 };
 
 /** A figure, its label, and the sample it was computed over. The basis is not optional. */
@@ -138,15 +141,19 @@ export function HubHero({ data }: { data: HubData }) {
 
 /* ── the derived-fact panel ────────────────────────────────────────────── */
 
+/** The glance always renders: it carries the page's one neutral line (MC-046), in the place
+ *  the typical sold price held, whether or not any public fact sits beside it. */
 export function HubGlance({ data }: { data: HubData }) {
   const facts = data.atAGlance.facts;
-  if (facts.length === 0) return null; // nothing derived, nothing shown
   return (
     <section className="hh-sec hh-glance">
       <div className="hh-wrap">
-        <div className="hh-facts">
-          {facts.map((f) => <Fact f={f} key={f.key} />)}
-        </div>
+        {facts.length > 0 ? (
+          <div className="hh-facts">
+            {facts.map((f) => <Fact f={f} key={f.key} />)}
+          </div>
+        ) : null}
+        <SoldHistoryLine subject={data.name} soldViewHref={`/sold?nbhd=${data.slug}`} tone="dark" className="hh-soldline" />
       </div>
     </section>
   );
@@ -188,7 +195,7 @@ export function HubVideoStreets({ data }: { data: HubData }) {
 /* ── 02 · the street ladder (rung two) ─────────────────────────────────── */
 
 function LadderRow({ s, rank, max }: { s: HubStreetCard; rank: number; max: number }) {
-  const n = s.soldCount ?? 0;
+  const n = s.activeCount;
   return (
     <li>
       <a href={`/streets/${s.slug}`}>
@@ -200,18 +207,11 @@ function LadderRow({ s, rank, max }: { s: HubStreetCard; rank: number; max: numb
         <span className="hh-ladbar" aria-hidden="true">
           <span style={{ width: `${Math.max(2, Math.round((n / max) * 100))}%` }} />
         </span>
-        <span className="hh-ladsales" data-fig="hub-street-sold" data-slug={s.slug} data-value={n}>
-          {n} <em>{n === 1 ? 'sale' : 'sales'}</em>
+        {/* The count of homes advertised for sale on the street today (IDX), the figure the
+            ladder is ordered by. Not a sold figure, never a price. */}
+        <span className="hh-ladsales" data-fig="hub-street-active" data-slug={s.slug} data-value={n}>
+          {n > 0 ? <>{n} <em>for sale</em></> : <em>none for sale</em>}
         </span>
-        <span className="hh-ladprice" data-fig="hub-street-typical" data-slug={s.slug} data-value={s.typicalPriceRounded ?? ''}>
-          {s.typicalPriceRounded !== null
-            ? `$${compactPrice(s.typicalPriceRounded)}`
-            : <em className="hh-ladsilent">sample too small to publish</em>}
-        </span>
-        {/* THE BASIS, ON THE ROW. Every price on this page states the sample and window it
-            was computed over, in the same block as the figure. The silent row states the
-            floor it sits under, the same sentence its street page prints. */}
-        <span className="hh-ladbasis">{s.basis ?? 'fewer than five recorded sales, so no price is stated'}</span>
       </a>
     </li>
   );
@@ -219,7 +219,7 @@ function LadderRow({ s, rank, max }: { s: HubStreetCard; rank: number; max: numb
 
 export function HubStreets({ data }: { data: HubData }) {
   const n = data.streets.length;
-  const max = Math.max(...data.streets.map((s) => s.soldCount ?? 0), 1);
+  const max = Math.max(...data.streets.map((s) => s.activeCount), 1);
   const filmed = data.streets.filter((s) => s.hasVideo).length;
   // RUNG THREE. The ladder is every published street, so the hub's own A-to-Z page had nothing
   // to add; since MC-012 it answers 301 to this section. The third rung is the Milton-wide
@@ -233,8 +233,8 @@ export function HubStreets({ data }: { data: HubData }) {
           title={`Every street in ${data.name} with a page`}
           standfirst={
             n === 0
-              ? `No street guide is published in ${data.name} yet. The neighbourhood figures above still hold; the street-level read is what is missing.`
-              : `${n === 1 ? 'One street' : `All ${n} streets`}, ranked by sales in the last 12 months${filmed ? `, ${filmed} of them filmed` : ''}. Each price is the figure that street's own page publishes, over the same sample, and the sample is printed under it.`
+              ? `No street guide is published in ${data.name} yet.`
+              : `${n === 1 ? 'One street' : `All ${n} streets`}, ordered by homes for sale today, then A to Z${filmed ? `, ${filmed} of them filmed` : ''}.`
           }
           action={action}
         />
@@ -259,48 +259,6 @@ export function HubOverview({ data }: { data: HubData }) {
         <div className="hh-prose">
           {data.overview.map((p, i) => <p key={i}>{p}</p>)}
         </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── 04 · the market ───────────────────────────────────────────────────── */
-
-export function HubMarket({ data }: { data: HubData }) {
-  const hasCompare = data.marketCompare.length > 0;
-  return (
-    <section className="hh-sec hh-market" id="market">
-      <div className="hh-wrap">
-        <SectionHead
-          index={idx(data, 'market')}
-          title={`How ${data.name} trades`}
-          standfirst={
-            data.typicalBasis
-              ? `The typical sale price here, ${data.typicalBasis}, beside Milton's over the same window.`
-              : data.stats.sold12mo !== null && data.stats.sold12mo < 5
-                ? `${data.stats.sold12mo === 0 ? 'No recorded sales' : `${data.stats.sold12mo} recorded ${data.stats.sold12mo === 1 ? 'sale' : 'sales'}`} in the last 12 months, below the floor of five at which a price is published.`
-                : undefined
-          }
-        />
-        {hasCompare ? (
-          <div className="hh-compare">
-            {data.marketCompare.map((r) => (
-              <div className="hh-comparerow" key={r.metricLabel}>
-                <span className="hh-comparel">
-                  {r.metricLabel}
-                  <span className="hh-compareb">{data.name}: {data.typicalBasis}. Milton: {data.miltonBasis ?? 'sample not stated'}.</span>
-                </span>
-                <span className="hh-comparev" data-fig="hub-compare-typical" data-value={r.neighbourhoodValue}>{r.neighbourhoodValue}</span>
-                <span className="hh-comparem">Milton <b data-fig="hub-compare-milton" data-value={r.miltonValue}>{r.miltonValue}</b></span>
-                <span className="hh-compared">{r.delta}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
-        <div className="hh-prose">
-          {data.commentary.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-        </div>
-        <p className="hh-source">{data.commentary.source}</p>
       </div>
     </section>
   );
@@ -390,18 +348,13 @@ export function HubFaqs({ data }: { data: HubData }) {
 /* ── 08 · nearby ───────────────────────────────────────────────────────── */
 
 function Sibling({ s }: { s: HubSibling }) {
-  const sales = `${s.salesCount} ${s.salesCount === 1 ? 'sale' : 'sales'} in 12 months`;
   return (
     <a className="hh-sib" href={`/neighbourhoods/${s.slug}`}>
       <span className="hh-sibname">{s.name}</span>
       {s.distanceKm !== null ? <span className="hh-sibdist">{s.distanceKm.toFixed(1)} km away</span> : null}
-      <span className="hh-sibprice" data-fig="hub-sibling-typical" data-slug={s.slug} data-value={s.typicalPriceRounded ?? ''}>
-        {s.typicalPriceRounded !== null ? `$${compactPrice(s.typicalPriceRounded)} typical` : 'price not published'}
-      </span>
-      <span className="hh-sibbasis">
-        {s.typicalPriceRounded !== null ? `across ${sales}` : `${sales}, below the floor of five`}
-        {s.streetPages > 0 ? ` · ${s.streetPages} ${s.streetPages === 1 ? 'street page' : 'street pages'}` : ''}
-      </span>
+      {s.streetPages > 0 ? (
+        <span className="hh-sibbasis">{s.streetPages} {s.streetPages === 1 ? 'street page' : 'street pages'}</span>
+      ) : null}
     </a>
   );
 }
@@ -417,8 +370,8 @@ export function HubSiblings({ data }: { data: HubData }) {
           title={byDistance ? 'Nearest neighbourhoods' : 'Other rural neighbourhoods'}
           standfirst={
             byDistance
-              ? `The four closest hubs, measured boundary centre to boundary centre on the Town of Milton's neighbourhood map. Each price is that neighbourhood's own published typical, suppressed below five sales.`
-              : `The Town of Milton draws no boundary for ${data.name}, so no distance is stated. Each price is that neighbourhood's own published typical, suppressed below five sales.`
+              ? `The four closest hubs, measured boundary centre to boundary centre on the Town of Milton's neighbourhood map.`
+              : `The Town of Milton draws no boundary for ${data.name}, so no distance is stated.`
           }
           action={{ href: '/neighbourhoods', label: 'All neighbourhoods' }}
         />

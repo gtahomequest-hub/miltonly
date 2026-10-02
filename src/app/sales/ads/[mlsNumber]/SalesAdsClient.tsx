@@ -16,6 +16,7 @@ import HomeValuationCard from "@/components/landing/HomeValuationCard";
 import { extractHighlights } from "@/lib/listing-highlights";
 import { extractKeyFacts } from "@/lib/listing-key-facts";
 import ListingBrokerage from "@/components/listings/ListingBrokerage";
+import { AugmentationLabel, ContactLine, ReportInaccuracyLine } from "@/components/listings/ListingComplianceLines";
 import { VOW_NOTICES, MLS_COPYRIGHT_NOTICE } from "@/lib/vowNotice";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
@@ -80,6 +81,8 @@ interface Props {
   // Slider row shape is a structural subset of Listing — TS structural typing
   // accepts the wider array when passed to the slider's narrower prop.
   sliderListings: Listing[];
+  /** CONTACT_EMAIL, read on the server (MP-007); null when unset. The 8.12 and 8.16 lines name it. */
+  contactEmail: string | null;
 }
 
 // GA4 typing helper. Each event fires inline at the call site so every
@@ -92,7 +95,7 @@ function getGtag(): GtagFn | null {
   return w.gtag || null;
 }
 
-function SalesAdsInner({ listing, sliderListings }: Props) {
+function SalesAdsInner({ listing, sliderListings, contactEmail }: Props) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
@@ -566,6 +569,14 @@ function SalesAdsInner({ listing, sliderListings }: Props) {
         </div>
       </section>
 
+      {/* MLS® Rule 8.24 (MC-047, shared with /listings/[mls] at MC-046 Stage 1): everything
+          above is the listing as the MLS® System gives it; everything below is ours. */}
+      <div className="bg-[#07111f]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-8">
+          <AugmentationLabel className="text-[11px] text-[#94a3b8] leading-relaxed border-t border-[#1e3a5f] pt-4" />
+        </div>
+      </div>
+
       {/* ── LIVE LISTING SLIDER ── full-width band, between the two-column
           grid and the booking band. ~5 cards visible at a time at the
           page's max-w-6xl width, vs 2-3 when the slider lived inside the
@@ -724,6 +735,12 @@ function SalesAdsInner({ listing, sliderListings }: Props) {
               <Link href="/about" className="text-[#94a3b8] hover:text-[#f8f9fb]">About</Link>
               <a href={headerTel} className="text-[#94a3b8] hover:text-[#f8f9fb]">{config.realtor.phone}</a>
             </nav>
+          </div>
+          {/* The listing's notices (MC-047), the same shared lines as /listings/[mls]:
+              8.12 how to reach the Member, 8.16 how the listing brokerage reports an error. */}
+          <div className="text-center text-[11px] text-[#94a3b8] leading-relaxed space-y-1.5 mb-4" data-listing-notices>
+            <ContactLine email={contactEmail} />
+            <ReportInaccuracyLine email={contactEmail} />
           </div>
           <div className="text-center text-[11px] text-[#64748b] leading-relaxed">
             © {new Date().getFullYear()} {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {config.brokerage.name}<br />

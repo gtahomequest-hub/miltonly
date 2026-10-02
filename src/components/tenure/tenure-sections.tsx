@@ -15,6 +15,7 @@ import React from "react";
 import type { HubData } from "../hub/types";
 import { fullPrice } from "../hub/format";
 import { IconHome, IconPeople, IconTag, IconKey, IconInvest, IntentIcon } from "../hub/icons";
+import SoldHistoryLine from "@/components/vow/SoldHistoryLine";
 
 // Inline-link prose: turns [[label|/href]] tokens into anchors, leaving all other
 // text untouched. Used so editorial paragraphs can link cross-tenure references
@@ -76,13 +77,17 @@ export function TenureHero({ data, eyebrow }: { data: HubData; eyebrow: string }
             <span className="h-eyebrow">{eyebrow}</span>
             <h1>{data.name}</h1>
             <p className="h-character">{data.character}</p>
+            {/* MC-046 Stage 1 (VOW item 40): "typical sold · 12 mo" and "sold · last 12
+                months" are gone. The active count stays (IDX); the neutral line stands where
+                the sold figures stood. */}
             {!data.nullStats && (
               <div className="h-herostats">
-                <Stat value={stats.typicalPrice} label="typical sold · 12 mo" accentDollar />
-                <Stat value={stats.sold12mo} label="sold · last 12 months" />
                 <Stat value={stats.onMarket} label="on the market" />
               </div>
             )}
+            {!data.nullStats && data.soldLine ? (
+              <SoldHistoryLine subject={data.soldLine.subject} returnPath={data.soldLine.returnPath} tone="dark" className="mt-5" />
+            ) : null}
           </div>
           <div className="h-intents">
             {data.intents.map((it) => (
@@ -151,6 +156,8 @@ export function TenureOverview({ data }: { data: HubData }) {
 
 export function TenureMarket({ data }: { data: HubData }) {
   if (data.nullStats) return null; // null-stats (POTL): no "how it trades" market section
+  // A market section with nothing measured in it is a heading over a source line: it goes.
+  if (data.marketCompare.length === 0 && data.commentary.paragraphs.length === 0) return null;
   return (
     <section className="h-block h-alt">
       <div className="h-wrap">

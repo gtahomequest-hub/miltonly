@@ -42,7 +42,9 @@ export default function SoldTableForest({
   return (
     <div className="sv-records">
       <div className="sv-rtable-scroll">
-        <table className="sv-rtable">
+        {/* data-vow marks the element that holds VOW values (MC-046 Stage 1); this table only
+            ever renders to an authorised, acknowledged reader. */}
+        <table className="sv-rtable" data-vow>
           <thead>
             <tr>
               <th>Address</th>

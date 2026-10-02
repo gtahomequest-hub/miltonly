@@ -73,6 +73,11 @@ export default {
         ['pages publishing sold-to-ask > 100%', rows.filter((r) => r.overAsk).length],
       ],
       assertions: [
+        // MC-046 Stage 1: a street page publishes no price, band or sold-to-ask figure at all, so
+        // the gates below have nothing to protect; that the page publishes none is asserted here.
+        ['pages publishing a sold price (MC-046: none may)', rows.filter((r) => r.priced).length, 0],
+        ['pages publishing a price band (MC-046: none may)', rows.filter((r) => r.band).length, 0],
+        ['pages publishing sold-to-ask (MC-046: none may)', rows.filter((r) => r.staPct !== null).length, 0],
         ['pages with NO prose block (parser reached nothing)', rows.filter((r) => !r.nProse).length, 0],
         ['pages with NO schema string', rows.filter((r) => !r.nSchema).length, 0],
         ['(a) denies a published price — visible', hitsIn('visible', 'a').length, 0],

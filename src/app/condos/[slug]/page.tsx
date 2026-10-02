@@ -12,13 +12,25 @@ import {
   generateLocalBusinessSchema,
   generateFAQSchema,
 } from "@/lib/schema";
-import { buildBuildingAttributes } from "@/lib/ai/buildBuildingAttributes";
-import { composeCondoBrief } from "@/lib/ai/condoBrief";
-import { toCondoView } from "@/lib/ai/condoView";
-import BuildingAttributesPage from "@/components/condo/BuildingAttributesPage";
-import { getMegaLive } from "@/lib/megaLive";
-import { isCondoPilot } from "@/lib/condoPilots";
 import { resolveCondoName } from "@/lib/condoName";
+import { mentionsVowTopic } from "@/lib/prose/vowTopic";
+
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40).
+//   · R3: the four Build B pilot slugs (src/lib/condoPilots.ts) serve the STANDARD template
+//     until Stage 2. BuildingAttributesPage is not rendered and nothing from
+//     buildBuildingAttributes (sale and lease medians, yields, mix, velocity, the DB3 area
+//     typical) is read for them. A pilot with no published CondoContent answers 404, as any
+//     unpublished building does.
+//   · R4: the stored metaTitle / metaDescription are served only when they carry no figure and
+//     no VOW topic (headFieldIsSafe below); otherwise a figure-free template stands in.
+
+/** A stored head string may carry the building's civic number and nothing else numeric. */
+function headFieldIsSafe(v: string | null | undefined, civic: string | null | undefined): v is string {
+  if (!v) return false;
+  const withoutCivic = civic ? v.split(civic).join(" ") : v;
+  if (/\d|[$%]/.test(withoutCivic)) return false;
+  return !mentionsVowTopic(v);
+}
 
 // MC-017 (2026-09-13): ISR, not a render per request. A visit past the day, or a purge, renders
 // once and the copy serves until the next. Every DB2 read carries the db2 tag and every DB3 read
@@ -40,26 +52,6 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  // Build B pilots: metadata from the building entity (no CondoContent required).
-  if (isCondoPilot(params.slug)) {
-    const b = await prisma.condoBuilding.findUnique({
-      where: { slug: params.slug },
-      select: { displayName: true, buildingAddress: true, streetNumber: true, streetSlug: true },
-    });
-    // DEC-CONDO-NAME: resolved, never the stored string.
-    const nm = b
-      ? resolveCondoName({ slug: params.slug, streetNumber: b.streetNumber, streetSlug: b.streetSlug, buildingAddress: b.buildingAddress }).name
-      : params.slug;
-    const description = `Sales, leases, gross yield and amenities for ${nm} in ${config.CITY_NAME}. Every figure from the building's own recorded trades.`;
-    const title = `${nm}: ${config.CITY_NAME} Condo Building`;
-    return {
-      title,
-      description,
-      alternates: { canonical: `${config.SITE_URL}/condos/${params.slug}` },
-      openGraph: { title, description, url: `${config.SITE_URL}/condos/${params.slug}`, type: "article" },
-      twitter: { card: "summary_large_image", title, description },
-    };
-  }
   const [content, b] = await Promise.all([
     prisma.condoContent.findUnique({
       where: { buildingSlug: params.slug },
@@ -82,8 +74,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const stored = content.buildingName;
   const swap = (v: string | null): string | null =>
     v && stored && nm !== stored ? v.split(stored).join(nm) : v;
-  const title = swap(content.metaTitle) ?? `${nm} | ${config.CITY_NAME} Condo Building Guide`;
-  const description = swap(content.metaDescription) ?? undefined;
+  // MC-046 R4: a stored head field that carries a figure or a VOW topic is not served.
+  const civic = b?.streetNumber ?? null;
+  const storedTitle = swap(content.metaTitle);
+  const storedDescription = swap(content.metaDescription);
+  const title = headFieldIsSafe(storedTitle, civic) ? storedTitle : `${nm} | ${config.CITY_NAME} Condo Building Guide`;
+  const description = headFieldIsSafe(storedDescription, civic)
+    ? storedDescription
+    : `${nm} in ${config.CITY_NAME}: the building guide, its amenities and rules, and the units listed in it today.`;
   return {
     title,
     description,
@@ -94,33 +92,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CondoBuildingPage({ params }: Props) {
-  // Build B pilots render ONLY the buildBuildingAttributes payload (no CondoContent/LLM prose).
-  if (isCondoPilot(params.slug)) {
-    const attrs = await buildBuildingAttributes(params.slug).catch(() => null);
-    if (!attrs) notFound();
-    const { _debug, ...safe } = attrs; // eslint-disable-line @typescript-eslint/no-unused-vars
-    // Template-composed brief (deterministic, no model call; assertPromptSafe belt, fail-closed).
-    const { text: brief } = composeCondoBrief(safe);
-    // Sanitize to a display-safe view — ONLY this crosses to the client (serialized into the HTML).
-    const view = toCondoView(safe, brief);
-    const schemas: Array<Record<string, unknown>> = [
-      generateCondoSchema({ name: safe.buildingName.name, slug: safe.slug, address: safe.displayName, latitude: 0, longitude: 0 }),
-      generateBreadcrumbSchema([
-        { name: "Home", url: config.SITE_URL },
-        { name: "Condos", url: `${config.SITE_URL}/condos` },
-        { name: safe.buildingName.name, url: `${config.SITE_URL}/condos/${safe.slug}` },
-      ]),
-      generateLocalBusinessSchema(),
-    ];
-    return (
-      <>
-        <SchemaScript schemas={schemas} />
-        <BuildingAttributesPage view={view} live={await getMegaLive().catch(() => undefined)} />
-        <SiteFooter />
-      </>
-    );
-  }
-
+  // Every building, the four pilots included, renders the standard template (MC-046 R3).
   const data = await getCondoData(params.slug);
   if (!data) notFound();
 
@@ -146,6 +118,8 @@ export default async function CondoBuildingPage({ params }: Props) {
       { name: data.name, url: `${config.SITE_URL}/condos/${data.slug}` },
     ]),
     generateLocalBusinessSchema(),
+    // FAQPage follows EXACTLY the rendered FAQ set: getCondoData filters the stored answers for
+    // figures and VOW topics (MC-046 R2), whatever the generation's age.
     ...(data.faqs.length ? [generateFAQSchema(data.faqs)] : []),
   ];
 

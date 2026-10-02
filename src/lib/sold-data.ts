@@ -1,202 +1,25 @@
-// Server-only fetchers for sold/lease data. All queries enforce VOW
-// compliance (perm_advertise = TRUE, 90-day window, transaction_type filter)
-// and use Redis caching with graceful degradation. Call these from server
-// components only.
+// THE GATED SOLD RECORDS (MC-046 Stage 1). Every function here reads DB2 and takes a VowAccess
+// from src/lib/vow/door.ts as its first argument: a reader who passed canSeeVowRecords (the route
+// or page obtains it with vowReaderAccess). Without one there is no connection to read with.
+//
+// All queries enforce VOW compliance (perm_advertise = TRUE, the 90-day window, the
+// transaction_type filter, the 100-record cap). Nothing is cached in Upstash any more (R18): a
+// shared key would hold VOW records outside the door. The public stat readers this file used to
+// carry (street and neighbourhood sale and lease stats, monthly sales, Milton totals) left with
+// the visitor view and were deleted; Stage 2's gated ledger reads through the door.
 
 import "server-only";
 import { neighbourhoodRows } from "@/lib/hubSets";
-import { getSoldDb, getAnalyticsDb } from "./db";
-import { cached, CACHE_TTL } from "./cache";
-import { getSession } from "./auth";
-import { canSeeVowRecords } from "./vow-access";
+import { soldDb, type VowAccess } from "@/lib/vow/door";
 import { config } from "./config";
-import type {
-  SoldRecord,
-  StreetSoldStats,
-  NeighbourhoodSoldStats,
-  StreetMonthlyStats,
-} from "./db-types";
+import type { SoldRecord } from "./db-types";
 
 const MAX_CONSUMER_RECORDS = 100; // VOW rule — never exceed per consumer query
-
-/**
- * VOW defence-in-depth gate. Every record-returning fetcher calls this
- * BEFORE any cache or DB touch. If it returns false, the fetcher returns
- * an empty array and never queries DB2, never hits Redis, never touches a
- * cache key that could be poisoned.
- *
- * Required conditions:
- *   - authenticated session
- *   - VOW bona-fide-interest acknowledgement recorded (Phase 2.5 gate)
- *   - a password set (MP-002b, R-805(c)); src/lib/vow-access.ts is the one rule
- *
- * Aggregate fetchers (stats, counts, neighbourhood lists) do NOT call this —
- * those are always public by design.
- */
-async function canServeRecordsToThisRequest(): Promise<boolean> {
-  const user = await getSession();
-  return canSeeVowRecords(user);
-}
-
-export interface PublicSaleStats {
-  sold_count_90days: number;
-  sold_count_12months: number;
-  avg_sold_price: number | null;      // authed-only — reserved here, callers decide visibility
-  median_sold_price: number | null;   // authed-only
-  avg_list_price: number | null;      // authed-only
-  avg_dom: number | null;             // authed-only
-  avg_sold_to_ask: number | null;     // authed-only
-  price_change_yoy: number | null;    // authed-only
-  peak_month: number | null;
-  market_temperature: string | null;
-}
-
-export interface PublicLeaseStats {
-  leased_count_90days: number;
-  leased_count_12months: number;
-  avg_leased_price: number | null;          // authed-only
-  avg_leased_price_1bed: number | null;     // authed-only
-  avg_leased_price_2bed: number | null;     // authed-only
-  avg_leased_price_3bed: number | null;     // authed-only
-  avg_leased_price_4bed: number | null;     // authed-only
-  avg_lease_dom: number | null;             // authed-only
-}
-
-export interface PublicNeighbourhoodSaleStats {
-  sold_count_90days: number;
-  sold_count_12months: number;
-  avg_sold_detached: number | null;  // authed-only
-  avg_sold_semi: number | null;      // authed-only
-  avg_sold_town: number | null;      // authed-only
-  avg_sold_condo: number | null;     // authed-only
-  avg_dom: number | null;            // authed-only
-  avg_sold_to_ask: number | null;    // authed-only
-  price_change_yoy: number | null;   // authed-only
-  market_score: number | null;
-}
 
 function n(v: string | number | null | undefined): number | null {
   if (v === null || v === undefined) return null;
   const x = typeof v === "number" ? v : parseFloat(String(v));
   return Number.isFinite(x) ? x : null;
-}
-
-// ────────────────────────────────────────
-// STREET — SALE
-// ────────────────────────────────────────
-
-export async function getStreetSaleStats(streetSlug: string): Promise<PublicSaleStats | null> {
-  if (!getAnalyticsDb()) return null;
-  return cached(`street-sale-stats:${streetSlug}`, CACHE_TTL.stats, async () => {
-    const rows = (await getAnalyticsDb()!`
-      SELECT * FROM analytics.street_sold_stats WHERE street_slug = ${streetSlug}
-    `) as Array<StreetSoldStats>;
-    const r = rows[0];
-    if (!r) return null;
-    return {
-      sold_count_90days: r.sold_count_90days,
-      sold_count_12months: r.sold_count_12months,
-      avg_sold_price: n(r.avg_sold_price),
-      median_sold_price: n(r.median_sold_price),
-      avg_list_price: n(r.avg_list_price),
-      avg_dom: n(r.avg_dom),
-      avg_sold_to_ask: n(r.avg_sold_to_ask),
-      price_change_yoy: n(r.price_change_yoy),
-      peak_month: r.peak_month,
-      market_temperature: r.market_temperature,
-    };
-  });
-}
-
-export async function getStreetLeaseStats(streetSlug: string): Promise<PublicLeaseStats | null> {
-  if (!getAnalyticsDb()) return null;
-  return cached(`street-lease-stats:${streetSlug}`, CACHE_TTL.stats, async () => {
-    const rows = (await getAnalyticsDb()!`
-      SELECT * FROM analytics.street_sold_stats WHERE street_slug = ${streetSlug}
-    `) as Array<StreetSoldStats>;
-    const r = rows[0];
-    if (!r) return null;
-    return {
-      leased_count_90days: r.leased_count_90days,
-      leased_count_12months: r.leased_count_12months,
-      avg_leased_price: n(r.avg_leased_price),
-      avg_leased_price_1bed: n(r.avg_leased_price_1bed),
-      avg_leased_price_2bed: n(r.avg_leased_price_2bed),
-      avg_leased_price_3bed: n(r.avg_leased_price_3bed),
-      avg_leased_price_4bed: n(r.avg_leased_price_4bed),
-      avg_lease_dom: n(r.avg_lease_dom),
-    };
-  });
-}
-
-export async function getStreetMonthlySales(streetSlug: string): Promise<Array<{ year: number; month: number; avg_sold_price: number | null; sold_count: number }>> {
-  // Gate at fetcher level: even though monthly stats are aggregated, a
-  // low-volume street (1 sale/month) makes these rows effectively
-  // individual. Defence-in-depth — never hit DB or cache for anon users.
-  if (!(await canServeRecordsToThisRequest())) return [];
-  if (!getAnalyticsDb()) return [];
-  return cached(`street-monthly-sales:${streetSlug}`, CACHE_TTL.stats, async () => {
-    const rows = (await getAnalyticsDb()!`
-      SELECT year, month, avg_sold_price, sold_count
-      FROM analytics.street_monthly_stats
-      WHERE street_slug = ${streetSlug}
-      ORDER BY year ASC, month ASC
-    `) as Array<StreetMonthlyStats>;
-    return rows.map((r) => ({
-      year: r.year,
-      month: r.month,
-      avg_sold_price: n(r.avg_sold_price),
-      sold_count: r.sold_count,
-    }));
-  });
-}
-
-// ────────────────────────────────────────
-// NEIGHBOURHOOD — SALE + LEASE
-// ────────────────────────────────────────
-
-export async function getNeighbourhoodSaleStats(neighbourhood: string): Promise<PublicNeighbourhoodSaleStats | null> {
-  if (!getAnalyticsDb()) return null;
-  return cached(`nbhd-sale-stats:${neighbourhood}`, CACHE_TTL.stats, async () => {
-    const rows = (await getAnalyticsDb()!`
-      SELECT * FROM analytics.neighbourhood_sold_stats WHERE neighbourhood = ${neighbourhood}
-    `) as Array<NeighbourhoodSoldStats>;
-    const r = rows[0];
-    if (!r) return null;
-    return {
-      sold_count_90days: r.sold_count_90days,
-      sold_count_12months: r.sold_count_12months,
-      avg_sold_detached: n(r.avg_sold_detached),
-      avg_sold_semi: n(r.avg_sold_semi),
-      avg_sold_town: n(r.avg_sold_town),
-      avg_sold_condo: n(r.avg_sold_condo),
-      avg_dom: n(r.avg_dom),
-      avg_sold_to_ask: n(r.avg_sold_to_ask),
-      price_change_yoy: n(r.price_change_yoy),
-      market_score: n(r.market_score),
-    };
-  });
-}
-
-export async function getNeighbourhoodLeaseStats(neighbourhood: string): Promise<PublicLeaseStats | null> {
-  if (!getAnalyticsDb()) return null;
-  return cached(`nbhd-lease-stats:${neighbourhood}`, CACHE_TTL.stats, async () => {
-    const rows = (await getAnalyticsDb()!`
-      SELECT * FROM analytics.neighbourhood_sold_stats WHERE neighbourhood = ${neighbourhood}
-    `) as Array<NeighbourhoodSoldStats>;
-    const r = rows[0];
-    if (!r) return null;
-    return {
-      leased_count_90days: r.leased_count_90days,
-      leased_count_12months: r.leased_count_12months,
-      avg_leased_price: n(r.avg_leased_price),
-      avg_leased_price_1bed: n(r.avg_leased_price_1bed),
-      avg_leased_price_2bed: n(r.avg_leased_price_2bed),
-      avg_leased_price_3bed: n(r.avg_leased_price_3bed),
-      avg_leased_price_4bed: n(r.avg_leased_price_4bed),
-      avg_lease_dom: n(r.avg_lease_dom),
-    };
-  });
 }
 
 // ────────────────────────────────────────
@@ -252,114 +75,82 @@ function toListItem(r: SoldRecord): SoldListItem {
 }
 
 export async function getStreetSoldList(
+  access: VowAccess,
   streetSlug: string,
   type: "sale" | "lease",
   days: number = 90,
   limit: number = 20
 ): Promise<SoldListItem[]> {
-  // VOW defence-in-depth — gate at fetcher level BEFORE any cache lookup.
-  // Ensures no anon request ever touches sold.sold_records or a Redis key
-  // that could return cached records.
-  if (!(await canServeRecordsToThisRequest())) return [];
-  if (!getSoldDb()) return [];
+  const db = soldDb(access);
+  if (!db) return [];
   const safeDays = Math.min(90, Math.max(1, days));
   const safeLimit = Math.min(MAX_CONSUMER_RECORDS, Math.max(1, limit));
   const txn = type === "sale" ? "For Sale" : "For Lease";
-  return cached(`sold-list:street:${streetSlug}:${type}:${safeDays}:${safeLimit}`, CACHE_TTL.soldList, async () => {
-    const rows = (await getSoldDb()!`
-      SELECT * FROM sold.sold_records
-      WHERE street_slug = ${streetSlug}
-        AND perm_advertise = TRUE
-        AND transaction_type = ${txn}
-        AND sold_date >= NOW() - (${safeDays} || ' days')::interval
-        AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND
-      ORDER BY sold_date DESC
-      LIMIT ${safeLimit}
-    `) as Array<SoldRecord>;
-    return rows.map(toListItem);
-  });
+  const rows = (await db`
+    SELECT * FROM sold.sold_records
+    WHERE street_slug = ${streetSlug}
+      AND perm_advertise = TRUE
+      AND transaction_type = ${txn}
+      AND sold_date >= NOW() - (${safeDays} || ' days')::interval
+      AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND
+    ORDER BY sold_date DESC
+    LIMIT ${safeLimit}
+  `) as Array<SoldRecord>;
+  return rows.map(toListItem);
 }
 
 export async function getNeighbourhoodSoldList(
+  access: VowAccess,
   neighbourhood: string,
   type: "sale" | "lease",
   days: number = 90,
   limit: number = 20
 ): Promise<SoldListItem[]> {
-  if (!(await canServeRecordsToThisRequest())) return [];
-  if (!getSoldDb()) return [];
+  const db = soldDb(access);
+  if (!db) return [];
   const safeDays = Math.min(90, Math.max(1, days));
   const safeLimit = Math.min(MAX_CONSUMER_RECORDS, Math.max(1, limit));
   const txn = type === "sale" ? "For Sale" : "For Lease";
-  return cached(`sold-list:nbhd:${neighbourhood}:${type}:${safeDays}:${safeLimit}`, CACHE_TTL.soldList, async () => {
-    const rows = (await getSoldDb()!`
-      SELECT * FROM sold.sold_records
-      WHERE neighbourhood = ${neighbourhood}
-        AND perm_advertise = TRUE
-        AND transaction_type = ${txn}
-        AND sold_date >= NOW() - (${safeDays} || ' days')::interval
-        AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND
-      ORDER BY sold_date DESC
-      LIMIT ${safeLimit}
-    `) as Array<SoldRecord>;
-    return rows.map(toListItem);
-  });
+  const rows = (await db`
+    SELECT * FROM sold.sold_records
+    WHERE neighbourhood = ${neighbourhood}
+      AND perm_advertise = TRUE
+      AND transaction_type = ${txn}
+      AND sold_date >= NOW() - (${safeDays} || ' days')::interval
+      AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND
+    ORDER BY sold_date DESC
+    LIMIT ${safeLimit}
+  `) as Array<SoldRecord>;
+  return rows.map(toListItem);
 }
 
 export async function getRecentSoldList(
+  access: VowAccess,
   type: "sale" | "lease",
   days: number = 90,
   limit: number = 60,
   filters?: { neighbourhood?: string; property_type?: string }
 ): Promise<SoldListItem[]> {
-  if (!(await canServeRecordsToThisRequest())) return [];
-  if (!getSoldDb()) return [];
+  const db = soldDb(access);
+  if (!db) return [];
   const safeDays = Math.min(90, Math.max(1, days));
   const safeLimit = Math.min(MAX_CONSUMER_RECORDS, Math.max(1, limit));
   const txn = type === "sale" ? "For Sale" : "For Lease";
   const nbhd = filters?.neighbourhood ?? null;
   const ptype = filters?.property_type ?? null;
-  return cached(
-    `sold-list:all:${type}:${safeDays}:${safeLimit}:${nbhd ?? "-"}:${ptype ?? "-"}`,
-    CACHE_TTL.soldList,
-    async () => {
-      const rows = (await getSoldDb()!`
-        SELECT * FROM sold.sold_records
-        WHERE city = ${config.PRISMA_CITY_VALUE}
-          AND perm_advertise = TRUE
-          AND transaction_type = ${txn}
-          AND sold_date >= NOW() - (${safeDays} || ' days')::interval
-          AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND
-          AND (${nbhd}::text IS NULL OR neighbourhood = ${nbhd})
-          AND (${ptype}::text IS NULL OR property_type = ${ptype})
-        ORDER BY sold_date DESC
-        LIMIT ${safeLimit}
-      `) as Array<SoldRecord>;
-      return rows.map(toListItem);
-    }
-  );
-}
-
-// ────────────────────────────────────────
-// TOTALS
-// ────────────────────────────────────────
-
-export async function getMiltonSoldTotals(): Promise<{ last30: number; last90: number }> {
-  if (!getSoldDb()) return { last30: 0, last90: 0 };
-  return cached(`milton-sold-totals`, CACHE_TTL.homepage, async () => {
-    const rows = (await getSoldDb()!`
-      SELECT
-        (SELECT COUNT(*) FROM sold.sold_records
-          WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
-            AND transaction_type = 'For Sale'
-            AND sold_date >= NOW() - INTERVAL '30 days' AND sold_date <= NOW())::int AS last30,
-        (SELECT COUNT(*) FROM sold.sold_records
-          WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
-            AND transaction_type = 'For Sale'
-            AND sold_date >= NOW() - INTERVAL '90 days' AND sold_date <= NOW())::int AS last90
-    `) as Array<{ last30: number; last90: number }>;
-    return rows[0] ?? { last30: 0, last90: 0 };
-  });
+  const rows = (await db`
+    SELECT * FROM sold.sold_records
+    WHERE city = ${config.PRISMA_CITY_VALUE}
+      AND perm_advertise = TRUE
+      AND transaction_type = ${txn}
+      AND sold_date >= NOW() - (${safeDays} || ' days')::interval
+      AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND
+      AND (${nbhd}::text IS NULL OR neighbourhood = ${nbhd})
+      AND (${ptype}::text IS NULL OR property_type = ${ptype})
+    ORDER BY sold_date DESC
+    LIMIT ${safeLimit}
+  `) as Array<SoldRecord>;
+  return rows.map(toListItem);
 }
 
 /** One neighbourhood filter option: a stable slug for the URL, a clean name for the label, and the
@@ -388,8 +179,11 @@ function slugifyRawNeighbourhood(raw: string): string {
 
 /** Distinct sold neighbourhoods as {slug,name,raw}, joined to the Neighbourhood registry where
  *  possible so the slug matches the rest of the site. */
-export async function getSoldNeighbourhoodOptions(): Promise<SoldNeighbourhoodOption[]> {
-  const raws = await getDistinctSoldNeighbourhoods();
+export async function getSoldNeighbourhoodOptions(access: VowAccess | null): Promise<SoldNeighbourhoodOption[]> {
+  // Without a reader's access there is no sold record to name a neighbourhood from; the page
+  // falls back to the registry's own raw strings.
+  if (!access) return [];
+  const raws = await getDistinctSoldNeighbourhoods(access);
   if (raws.length === 0) return [];
   const registry = await neighbourhoodRows().catch(() => [] as Array<{ slug: string; name: string; rawStrings: string[] }>);
   const byRaw = new Map<string, { slug: string; name: string }>();
@@ -404,24 +198,15 @@ export async function getSoldNeighbourhoodOptions(): Promise<SoldNeighbourhoodOp
   });
 }
 
-/** Accepts a slug (new) or a raw MLS string (old bookmarks / existing inbound links) and returns
- *  the raw string the sold queries need. Undefined when the param matches nothing. */
-export async function resolveSoldNeighbourhoodParam(param: string | undefined): Promise<string | undefined> {
-  if (!param) return undefined;
-  const opts = await getSoldNeighbourhoodOptions();
-  return opts.find((o) => o.slug === param)?.raw ?? opts.find((o) => o.raw === param)?.raw;
-}
-
-export async function getDistinctSoldNeighbourhoods(): Promise<string[]> {
-  if (!getSoldDb()) return [];
-  return cached(`milton-sold-nbhds`, CACHE_TTL.homepage, async () => {
-    const rows = (await getSoldDb()!`
-      SELECT DISTINCT neighbourhood FROM sold.sold_records
-      WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
-        AND transaction_type = 'For Sale'
-        AND sold_date >= NOW() - INTERVAL '90 days' AND sold_date <= NOW()
-      ORDER BY neighbourhood ASC
-    `) as Array<{ neighbourhood: string }>;
-    return rows.map((r) => r.neighbourhood);
-  });
+async function getDistinctSoldNeighbourhoods(access: VowAccess): Promise<string[]> {
+  const db = soldDb(access);
+  if (!db) return [];
+  const rows = (await db`
+    SELECT DISTINCT neighbourhood FROM sold.sold_records
+    WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
+      AND transaction_type = 'For Sale'
+      AND sold_date >= NOW() - INTERVAL '90 days' AND sold_date <= NOW()
+    ORDER BY neighbourhood ASC
+  `) as Array<{ neighbourhood: string }>;
+  return rows.map((r) => r.neighbourhood);
 }

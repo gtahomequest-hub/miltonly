@@ -15,7 +15,7 @@
 // barrier). The returned payload holds no individual sold row and no sub-k price stat.
 import { resolveCondoName } from "@/lib/condoName";
 import { prisma } from "@/lib/prisma";
-import { getSoldDb } from "@/lib/db";
+import { soldDb, scopedVowAccess, type Sql } from "@/lib/vow/door";
 import { groupCondoClusters, type CondoClusterRow } from "@/lib/condoIdentity";
 import { getNeighbourhoodMatchStats } from "@/lib/geni/neighbourhoodMatchRead";
 
@@ -23,9 +23,9 @@ const K_TYPICAL = 5;
 const K_RANGE = 10;
 import { K_IDENTITY } from "@/lib/kAnon";
 
-type SqlClient = NonNullable<ReturnType<typeof getSoldDb>>;
+type SqlClient = Sql;
 function querySold<T>(build: (db: SqlClient) => unknown): Promise<T[]> {
-  const sd = getSoldDb();
+  const sd = soldDb(scopedVowAccess());
   if (!sd) return Promise.resolve([] as T[]);
   return (build(sd) as Promise<T[]>).catch(() => [] as T[]);
 }

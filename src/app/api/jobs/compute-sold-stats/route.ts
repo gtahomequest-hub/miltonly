@@ -2,11 +2,11 @@
 // Fully decoupled from /api/sync/sold (Point 5) — runs on its own cron, so a
 // failed sync doesn't block stats refresh against whatever data did land.
 //
-// Auth: Authorization: Bearer <CRON_SECRET> (Point 7).
+// Auth: Authorization: Bearer <CRON_SECRET> only, through the VOW door (MC-046 R16).
 
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { getSoldDb, getAnalyticsDb, DB_CACHE_TAG } from "@/lib/db";
+import { soldDb, analyticsDb, vowSystemAccess, DB_CACHE_TAG } from "@/lib/vow/door";
 import { computeAllStats } from "@/lib/sold-stats";
 
 export const maxDuration = 300;
@@ -17,28 +17,27 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const header = req.headers.get("authorization");
-  const expected = `Bearer ${process.env.CRON_SECRET}`;
-  if (!header || !process.env.CRON_SECRET || header !== expected) {
+  const access = vowSystemAccess(req);
+  if (!access) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!getSoldDb() || !getAnalyticsDb()) {
+  if (!soldDb(access) || !analyticsDb(access)) {
     return NextResponse.json(
-      { error: "SOLD_DATABASE_URL or ANALYTICS_DATABASE_URL is not configured" },
+      { error: "DB2 or DB3 is not configured" },
       { status: 503 }
     );
   }
 
   try {
-    const summary = await computeAllStats();
+    const summary = await computeAllStats(access);
     console.log(
       `[jobs/compute-sold-stats] ` +
       `streetsSale=${summary.streetsSale} streetsLease=${summary.streetsLease} ` +
       `nbhdsSale=${summary.neighbourhoodsSale} nbhdsLease=${summary.neighbourhoodsLease} ` +
       `duration=${summary.durationMs}ms`
     );
-    // MC-017: every DB3 read a page makes sits in the Data Cache under the db3 tag (src/lib/db.ts)
+    // MC-017: every DB3 read a page makes sits in the Data Cache under the db3 tag (src/lib/vow/door.ts)
     // and the pages that made it are ISR; a run that wrote analytics rows drops the tag so the next
     // render reads what it just wrote. Pulled forward from MC-015.
     revalidateTag(DB_CACHE_TAG.ANALYTICS_DATABASE_URL);

@@ -4,17 +4,20 @@
 // streets + ~108 condos ≈ 1k small entries (~18KB gzipped) — one fetch on first
 // focus beats a network round-trip per keystroke, and there's no new dependency.
 //
-// Secondary lines are the "depth proof" — real counts:
+// Secondary lines:
 //   neighbourhood → "Neighbourhood · N streets"  (N = ResidentialStreet _count)
-//   street        → "<its neighbourhood> · N homes" (N = distinct addresses that
-//                    have sold on the street — the honest "homes we have data on")
+//   street        → its neighbourhood
 //   condo         → its address (condo `name` is address-form; units when distinct)
+//
+// NO SOLD COUNT (MC-046 R7). A street's line read "<its neighbourhood> · N homes", N being the
+// distinct addresses that had sold on it, from sold.sold_records. That is a count derived from
+// VOW records, served to anyone by /api/hero-index, so the line is the neighbourhood alone and
+// this module no longer reads the sold database at all.
 import { condoDisplayName } from "@/lib/condoName";
 import { prisma } from "@/lib/prisma";
-import { getSoldDb } from "@/lib/db";
 import { surfacedStreetWhere } from "@/lib/streetSurface";
 import { resolveStreetName } from "@/lib/streetName";
-import { DISPLAY_MONTHS } from "@/lib/vowWindow";
+import { publishedCondoSlugs } from "@/lib/condoSurface";
 
 export interface HeroIndexEntry {
   type: "neighbourhood" | "street" | "condo";
@@ -34,11 +37,10 @@ const UNIT_LIKE = /\b(unit|apt|apartment|suite|ph|penthouse|floor|flr|upper|lowe
 
 export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
   if (_cache && Date.now() - _cacheAt < TTL_MS) return _cache;
-  const soldDb = getSoldDb();
   // Derived once and reused by both queries below, so the neighbourhood count and the street list
   // can never disagree about what "surfaced" means.
   const surfaced = await surfacedStreetWhere();
-  const [nbs, streets, condos, homesRows] = await Promise.all([
+  const [nbs, streets, condos] = await Promise.all([
     prisma.neighbourhood.findMany({
       // Count only surfaced streets so the "· N streets" line stays honest after
       // the dormant-entity backfill (pageless entities are not shown anywhere).
@@ -48,22 +50,12 @@ export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
       where: surfaced, // dormant/pageless entities never appear in autocomplete
       select: { slug: true, name: true, neighbourhood: { select: { name: true } } },
     }),
+    // MC-046: buildings with a published page only (src/lib/condoSurface.ts).
     prisma.condoBuilding.findMany({
+      where: { slug: { in: await publishedCondoSlugs() } },
       select: { slug: true, name: true, address: true, buildingAddress: true, totalUnits: true, streetNumber: true, streetSlug: true, displayName: true },
     }),
-    soldDb
-      // "N homes" is a displayed figure, so it takes the display window (MC-037)
-      ? (soldDb`SELECT street_slug, COUNT(DISTINCT address)::int AS homes
-           FROM sold.sold_records WHERE street_slug IS NOT NULL
-             AND sold_date >= NOW() - (INTERVAL '1 month' * ${DISPLAY_MONTHS})
-           GROUP BY street_slug` as unknown as Promise<
-          Array<{ street_slug: string; homes: number }>
-        >)
-      : Promise.resolve([] as Array<{ street_slug: string; homes: number }>),
   ]);
-
-  const homesBySlug = new Map<string, number>();
-  for (const r of homesRows) homesBySlug.set(r.street_slug, r.homes);
 
   const entries: HeroIndexEntry[] = [];
   for (const nb of nbs) {
@@ -72,13 +64,11 @@ export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
   }
   for (const s of streets) {
     if (UNIT_LIKE.test(s.name)) continue; // skip unit-level rows
-    const homes = homesBySlug.get(s.slug) ?? 0;
-    const nb = s.neighbourhood?.name ?? "Milton";
     entries.push({
       type: "street",
       name: resolveStreetName(s.slug, s.name).name,
       slug: s.slug,
-      secondary: homes > 0 ? `${nb} · ${homes} home${homes === 1 ? "" : "s"}` : nb,
+      secondary: s.neighbourhood?.name ?? "Milton",
     });
   }
   for (const c of condos) {

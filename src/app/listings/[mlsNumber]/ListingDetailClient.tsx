@@ -9,11 +9,11 @@ import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
 import { REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 import { VOW_NOTICES } from "@/lib/vowNotice";
-import { AUGMENTATION_LABEL, contactLine, reportInaccuracyLine } from "@/lib/compliance/registrant";
+import { AugmentationLabel, ContactLine, ReportInaccuracyLine } from "@/components/listings/ListingComplianceLines";
 import AgentContactSection from "@/components/AgentContactSection";
 import ListingBrokerage, { brokerageDisplayName, contactSeparationLine } from "@/components/listings/ListingBrokerage";
 import {
-  VOWTeaser, WhatsNearby, MortgageCalc, TypicalRentBlock, type ListingRentFigure,
+  VOWTeaser, WhatsNearby, MortgageCalc,
   AudienceCTA, RentalBookingCard, SaveShareRow, MobileBottomBar,
 } from "./ListingExtras";
 
@@ -49,11 +49,7 @@ interface SchoolLite {
 }
 
 interface Extras {
-  soldCountOnStreet: number;
-  soldCountInHood: number;
   hoodName: string;
-  /** the Board's k-gated lease figure for this home type; null below the floor */
-  rent: ListingRentFigure | null;
   schools: SchoolLite[];
   /** CONTACT_EMAIL, read on the server (MP-007); null when unset. The 8.12 and 8.16 lines name it. */
   contactEmail: string | null;
@@ -270,8 +266,8 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
               {[
                 { icon: "🏠", label: titleCase(l.propertyType), sub: formatArchitecturalStyle(l.architecturalStyle) ?? "Residential" },
                 l.totalRooms ? { icon: "🚪", label: `${l.totalRooms} rooms`, sub: `${l.kitchens || 1} kitchen` } : null,
-                { icon: "🚗", label: `${l.parking} parking`, sub: l.garageType || "—" },
-                l.taxAmount ? { icon: "📋", label: `$${Math.round(l.taxAmount).toLocaleString()}/yr`, sub: `Tax (${l.taxYear || "—"})` } : null,
+                { icon: "🚗", label: `${l.parking} parking`, sub: l.garageType || "Garage not stated" },
+                l.taxAmount ? { icon: "📋", label: `$${Math.round(l.taxAmount).toLocaleString()}/yr`, sub: l.taxYear ? `Tax (${l.taxYear})` : "Tax" } : null,
                 l.approximateAge ? { icon: "📅", label: l.approximateAge, sub: "Approx. age" } : null,
               ].filter(Boolean).map((s, i) => (
                 <div key={i} className="flex items-center gap-2.5 pr-4 border-r border-[#dfe0dc] last:border-0 last:pr-0">
@@ -367,7 +363,7 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
 
             {/* MLS® Rule 8.24 (MC-047): everything above is the listing as the MLS® System gives
                 it; everything below is ours, and the label says so, with each source. */}
-            <p className="text-[11px] text-[#6b6f6a] leading-relaxed border-t border-[#dfe0dc] pt-4 mb-6" data-augmented-label>{AUGMENTATION_LABEL}</p>
+            <AugmentationLabel className="text-[11px] text-[#6b6f6a] leading-relaxed border-t border-[#dfe0dc] pt-4 mb-6" />
             {/* A4 (MC-047): the square footage is the midpoint of the listing's living-area range,
                 computed on sync (parseLivingAreaRange), so it is not an MLS® field. It sat in the
                 listing's own fact line with a price per square foot computed from it; both are
@@ -384,11 +380,8 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
             {/* Mortgage (sales only) */}
             {!isRental && <MortgageCalc price={l.price} taxAmount={l.taxAmount} propertyType={l.propertyType} />}
 
-            {/* Typical rent for this home type, the Board's closed leases (MH-008) */}
-            {!isRental && <TypicalRentBlock rent={extras.rent} />}
-
             {/* VOW teaser */}
-            <VOWTeaser mls={l.mlsNumber} soldCount={extras.soldCountOnStreet} hoodSoldCount={extras.soldCountInHood} hoodName={extras.hoodName} />
+            <VOWTeaser mls={l.mlsNumber} hoodName={extras.hoodName} />
 
             {/* Audience CTA */}
             <AudienceCTA mls={l.mlsNumber} isRental={isRental} />
@@ -510,8 +503,8 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
             kept out of the listing details above (item 20(vii)). 8.16: how the listing brokerage
             reports an error in what we added. Item 22: PropTx's notice, verbatim. */}
         <div className="text-[11px] text-[#6b6f6a] text-center py-6 border-t border-[#dfe0dc] space-y-1.5 leading-relaxed" data-listing-notices>
-          <p data-contact-line>{contactLine(extras.contactEmail)}</p>
-          <p data-report-inaccuracy>{reportInaccuracyLine(extras.contactEmail)}</p>
+          <ContactLine email={extras.contactEmail} />
+          <ReportInaccuracyLine email={extras.contactEmail} />
           <p>{VOW_NOTICES}</p>
           <p>MLS® {l.mlsNumber}. Listing data from the PropTx MLS® System, refreshed daily.</p>
         </div>

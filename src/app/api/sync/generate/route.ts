@@ -4,6 +4,7 @@ import { makeStreetDecision } from "@/lib/streetDecision";
 import { generateStreetContent } from "@/lib/generateStreet";
 import { streetRegenEnabled, STREET_REGEN_PAUSED_REASON } from "@/lib/streetRegen";
 import { planQueueItem } from "@/lib/streetQueuePlan";
+import { vowSystemAccess, withVowAccess } from "@/lib/vow/door";
 
 export const maxDuration = 300;
 
@@ -12,21 +13,23 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const secret =
-    request.headers.get("authorization")?.replace("Bearer ", "") ||
-    request.nextUrl.searchParams.get("secret");
-  if (secret !== process.env.CRON_SECRET) {
+  // MC-046 R16: a VOW-reading cron route opens the door by the Authorization header only
+  // (`Bearer <CRON_SECRET>`, constant time); a `?secret=` query parameter is refused.
+  const access = vowSystemAccess(request);
+  if (!access) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  return withVowAccess(access, () => runPOST());
+}
 
+async function runPOST() {
   const start = Date.now();
   const built: string[] = [];
   const skipped: string[] = [];
   const failed: string[] = [];
 
+  // MC-046 (from MC-047): the key's first ten characters are no longer logged.
   const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
-  const keyPrefix = process.env.ANTHROPIC_API_KEY?.slice(0, 10) || "NOT_SET";
-  console.log(`[generate] ANTHROPIC_API_KEY defined: ${hasApiKey}, prefix: ${keyPrefix}`);
 
   if (!hasApiKey) {
     return NextResponse.json({

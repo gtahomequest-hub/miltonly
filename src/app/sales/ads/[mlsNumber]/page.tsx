@@ -19,6 +19,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { OG_SITE_NAME } from "@/lib/compliance/registrant";
+import { contactEmail } from "@/lib/compliance/contact";
 import { formatPriceFull, cleanNeighbourhoodName } from "@/lib/format";
 import SalesAdsClient from "./SalesAdsClient";
 import { isPublicListing, stripVowFields } from "@/lib/listings/vow";
@@ -157,6 +158,7 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
     <SalesAdsClient
       listing={listingSerialized}
       sliderListings={sliderListingsSerialized}
+      contactEmail={contactEmail()}
     />
   );
 }

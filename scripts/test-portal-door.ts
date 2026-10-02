@@ -358,14 +358,20 @@ async function main() {
     const steps = vowStepsLeft({ ...whole, passwordHash: null });
     ok(!steps.needsAcknowledgement && steps.needsPassword, "an acknowledged row without a password owes only the password");
   }
+  // MC-046: VowGate and NeighbourhoodSoldBlock (dead) are deleted, and sold-data.ts no longer
+  // reads the session itself: each record read takes a VowAccess from the one door, which issues
+  // a reader's access by canSeeVowRecords. The surfaces below still gate by the rule directly.
+  {
+    const soldData = readFileSync("src/lib/sold-data.ts", "utf8");
+    ok(/getStreetSoldList\(\s*access: VowAccess/.test(soldData) && /getRecentSoldList\(\s*access: VowAccess/.test(soldData), "sold-data's record reads take a VowAccess from the door");
+    const door = readFileSync("src/lib/vow/door.ts", "utf8");
+    ok(door.includes("canSeeVowRecords(user) ? issue(\"reader\""), "the door issues a reader's access by canSeeVowRecords");
+  }
   for (const f of [
-    "src/lib/sold-data.ts",
     "src/app/api/sold/route.ts",
     "src/app/api/sold-stats/route.ts",
     "src/app/api/streets/[slug]/sold-records/route.ts",
-    "src/components/vow/VowGate.tsx",
     "src/app/sold/page.tsx",
-    "src/components/street/NeighbourhoodSoldBlock.tsx",
     "src/app/api/listings/[mlsNumber]/vow/route.ts",
     "src/app/listings/page.tsx",
     "src/app/api/auth/saved-listings/route.ts",

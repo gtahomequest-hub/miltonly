@@ -22,6 +22,11 @@ export interface GuideDef {
   gscQuery: string;
   metaTitle: string;
   metaDescription: string;
+  /** MC-046 Stage 1 (R6): the guide lost a whole H2 section with its sold figures, so it is
+   *  `noindex, follow` and out of the sitemap until Stage 2. */
+  noindex?: boolean;
+  /** MC-046 Stage 1: a sold-figure block left this guide; the page carries the neutral line. */
+  soldHistoryLine?: boolean;
 }
 
 export interface BuiltGuide {
@@ -56,5 +61,6 @@ export function readMinutes(sections: GuideSection[], faqs: GuideFaq[]): number 
         (s.table ? s.table.rows.reduce((m, r) => m + wc(r.join(" ")), 0) : 0),
       0,
     ) + faqs.reduce((n, f) => n + wc(f.question) + wc(f.answer), 0);
-  return Math.max(2, Math.round(words / 200));
+  // MC-046: a guide with nothing left to read has no read time (the template hides it).
+  return words === 0 ? 0 : Math.max(2, Math.round(words / 200));
 }

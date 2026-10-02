@@ -8,6 +8,7 @@ import { resolveHeroHref } from '@/lib/heroSearchClient';
 import { BriefSignup } from './BriefSignup';
 import { LandlordSignup } from './LandlordSignup';
 import ListingBrokerage from '@/components/listings/ListingBrokerage';
+import SoldHistoryLine from '@/components/vow/SoldHistoryLine';
 import { REGISTRANT_BROKERAGE_LINE, REGISTRANT_NAME_LINE } from '@/lib/compliance/registrant';
 import type { LeadSegment, MegaItemContent, MegaLive, MegaStrip, MenuKey, NavContext } from './megaTypes';
 
@@ -79,13 +80,15 @@ const MENUS: MenuDef[] = [
     href: '/listings',
     items: [
       { key: 'new', label: 'New today', href: '/listings', cta: 'See every home for sale', blurb: 'Every home for sale in Milton, newest first.' },
-      { key: 'changes', label: 'Price changes', href: '/listings', cta: 'See every home for sale', blurb: 'How many asking prices moved this week. Each listing page shows its own price history to signed-in visitors.' },
+      // NO COUNT (MC-046 R8): how many asking prices moved is price history. The item links the
+      // unfiltered grid; each listing page shows its own history to a signed-in reader.
+      { key: 'changes', label: 'Price changes', href: '/listings', cta: 'See every home for sale', blurb: 'Asking prices move. Each listing page shows its own price history to signed-in readers.' },
       { key: 'condos', label: 'Condos', href: '/condos', cta: 'Every condo building', blurb: 'Condo apartments and condo townhouses, building by building.' },
       { key: 'freehold', label: 'Freehold', href: '/freehold', cta: 'The freehold market', blurb: 'Detached, semi-detached and freehold townhomes: no condo corporation, no fee.' },
       // THE CTA IS THE FORM (MH-006, MA-004 defect 9). It went to /saved, which renders a sign-in
       // wall under "No account". The brief form's submit is this panel's CTA; href is the
       // Buy index for the crawler's copy of the rail and is never rendered for this item.
-      { key: 'alerts', label: 'Alerts', href: '/listings', cta: 'Send me the brief', blurb: 'What listed, what sold and what moved on price, each weekday morning.', form: 'brief' },
+      { key: 'alerts', label: 'Alerts', href: '/listings', cta: 'Send me the brief', blurb: 'What listed and what changed, each weekday morning.', form: 'brief' },
     ],
     more: [
       { href: '/sold', label: 'Recently sold' },
@@ -95,10 +98,11 @@ const MENUS: MenuDef[] = [
     ],
   },
   // RENT IS ITS OWN MENU (MH-007). It was one item in the Buy rail, four cards and a count. A
-  // renter and a landlord are neither buyers nor sellers, and the site has the lease record
-  // to serve both: what is available, where, at what rent by home type, what is new, and
-  // for a landlord what leased and how fast. "Available now" scopes to the page's hub (its
-  // href is rewritten in itemOf); the hub list links the scoped /rentals for every hub.
+  // renter and a landlord are neither buyers nor sellers: what is available, where, what is
+  // new, and for a landlord the form to list. "Typical rent" and the landlord's lease figures
+  // left with MC-046 (R8): both were closed-lease statistics, VOW records. "Available now"
+  // scopes to the page's hub (its href is rewritten in itemOf); the hub list links the scoped
+  // /rentals for every hub.
   {
     key: 'rent',
     label: 'Rent',
@@ -106,12 +110,11 @@ const MENUS: MenuDef[] = [
     items: [
       { key: 'now', label: 'Available now', href: '/rentals', cta: 'Every home for rent', blurb: 'Homes for rent in Milton, available now.' },
       { key: 'hoods', label: 'By neighbourhood', href: '/rentals', cta: 'Every home for rent', blurb: 'Every published neighbourhood, with the homes for rent in it now.' },
-      { key: 'typical', label: 'Typical rent', href: '/rentals', cta: 'Every home for rent', blurb: 'What Milton homes leased for in the last 12 months, by home type.' },
       { key: 'new', label: 'New this week', href: '/rentals', cta: 'Every home for rent', blurb: 'Homes listed for rent in the last seven days, newest first.' },
       // THE CTA IS THE FORM, like Alerts: the landlord's listing request posts through the one
       // lead path as source "landlord". href is the Rent index for the crawler's copy of the
       // rail and is never rendered for this item.
-      { key: 'landlord', label: 'Landlords', href: '/rentals', cta: 'List your rental with Aamir', blurb: 'What Milton homes leased for, how fast, and how a listing on the MLS reaches every renter at once.', form: 'landlord' },
+      { key: 'landlord', label: 'Landlords', href: '/rentals', cta: 'List your rental with Aamir', blurb: 'How a listing on the MLS reaches every renter at once, and the form to list with Aamir.', form: 'landlord' },
     ],
     more: [
       { href: '/neighbourhoods', label: 'Every neighbourhood' },
@@ -143,10 +146,10 @@ const MENUS: MenuDef[] = [
     key: 'sell',
     label: 'Sell',
     href: '/sell',
+    // ONE ITEM (MC-046 R8, R6). "Sold this month" and "Market watch" were sold statistics and
+    // left the menu; the Sell panel's figures became the one neutral line (see ItemBody).
     items: [
       { key: 'worth', label: "What's it worth", href: '/sell', cta: 'What is my home worth?', blurb: 'A grounded valuation from the comparable sales on your street and in your neighbourhood.' },
-      { key: 'soldmtd', label: 'Sold this month', href: '/sold', cta: 'Sold data and trends', blurb: 'What has closed in Milton so far this month.' },
-      { key: 'watch', label: 'Market watch', href: '/market-watch', cta: 'Every weekly edition', blurb: 'The weekly edition: sales, new listings and activity by neighbourhood.' },
     ],
     more: [
       { href: '/freehold', label: 'Freehold market' },
@@ -196,7 +199,7 @@ function StreetSearch({ id }: { id: string }) {
   );
 }
 
-/** One strip: a labelled row of street links, each with the count that ranked it. */
+/** One strip: a labelled row of street links, each with the public count that ranked it. */
 function Strip({ strip, onNavigate }: { strip?: MegaStrip; onNavigate?: () => void }) {
   if (!strip?.items.length) return null;
   return (
@@ -207,7 +210,7 @@ function Strip({ strip, onNavigate }: { strip?: MegaStrip; onNavigate?: () => vo
           <li key={s.slug}>
             <a href={`/streets/${s.slug}`} onClick={onNavigate}>
               {s.name}
-              <span className="m-mega-stripnote">{s.note}</span>
+              {s.note ? <span className="m-mega-stripnote">{s.note}</span> : null}
             </a>
           </li>
         ))}
@@ -258,25 +261,15 @@ function ItemBody({
       <Lead segments={c?.lead} blurb={item.blurb} />
       {item.search ? <StreetSearch id={`${idPrefix}-search-${menu.key}-${item.key}`} /> : null}
 
-      {c?.figures?.length ? (
-        // NO FORMATTING HERE, DELIBERATELY. Every value arrives as a display string built by
-        // composeMegaLive with the same helpers the Board uses. A renderer that cannot format
-        // cannot misformat. Each figure states its OWN window and sample.
-        <dl className="m-mega-figs">
-          {c.figures.map((f) => (
-            <div key={f.key}>
-              <dt>{f.label}</dt>
-              <dd data-fig={`menu-${menu.key}-${f.key}`} data-value={f.value}>
-                {f.value}
-              </dd>
-              <dd className="m-mega-figwin">
-                {f.window} · {f.sample}
-              </dd>
-            </div>
-          ))}
-        </dl>
+      {/* THE NEUTRAL LINE, ONE PER MENU (MC-046 R8), in the Sell panel where its typical, days to
+          sell and sold to ask were. It carries no figure, no count and no status. The desktop
+          band and the phone accordion each render this panel; one of the two shows at a width. */}
+      {menu.key === 'sell' && item.key === 'worth' ? (
+        // The click bubbles from the line's link, so the phone menu closes like every other link.
+        <div className="m-mega-soldline" onClick={onNavigate}>
+          <SoldHistoryLine subject="Milton" soldViewHref="/sold" tone="dark" />
+        </div>
       ) : null}
-      {c?.figures?.length && c.basis ? <p className="m-mega-figbasis">{c.basis}</p> : null}
 
       {c?.cards?.length ? (
         <ul className="m-mega-cards">
@@ -360,16 +353,6 @@ function ItemBody({
             </li>
           ))}
         </ul>
-      ) : null}
-
-      {c?.edition ? (
-        <div className="m-mega-edition">
-          <span className="m-mega-label">{c.edition.label}</span>
-          <p>{c.edition.summary}</p>
-          <a href={c.edition.href} onClick={onNavigate}>
-            Read the edition<span aria-hidden="true"> →</span>
-          </a>
-        </div>
       ) : null}
 
       <Strip strip={c?.strip} onNavigate={onNavigate} />

@@ -138,6 +138,11 @@
 }
 
 /* ───── filter bar — pill chips ───── */
+/* the neutral line where the aggregate layer was (MC-046 Stage 1) */
+.sold-v2 .sv-neutral {
+  background: var(--sv-bg-body);
+  padding: 28px 0;
+}
 .sold-v2 .sv-filters {
   background: var(--sv-surface);
   border-bottom: 1px solid var(--sv-border-muted);

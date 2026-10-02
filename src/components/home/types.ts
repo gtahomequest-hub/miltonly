@@ -3,11 +3,19 @@
 // The layout window consumes it. Every field is serializable (server -> client boundary).
 // k-anonymity contract: NeighbourhoodCard.typicalPriceRounded === null => silent card state.
 
-import type { NeighbourhoodCard as HubCard } from '@/lib/neighbourhoodCards';
 import type { StreetVideoCard } from '@/lib/homeSignals';
 import type { ListingCardData } from '@/components/listings/v2/types';
 
-export type { HubCard };
+/** One published hub on the homepage ladder and in the menu: its name and its ACTIVE count.
+ *  Nothing from a sold record crosses to the client (MC-046 Stage 1, item 40): no typical, no
+ *  sales count, no order by sales. The loader maps to exactly these three keys, so a field
+ *  added to neighbourhoodCards.ts cannot reach the RSC payload by riding along. */
+export interface HubCard {
+  slug: string;
+  name: string;
+  /** active listings advertised today across the hub's raw TREB strings */
+  activeCount: number;
+}
 
 /** A newest-listing card plus the ONE thing the card needs and the grid's card lacks:
  *  the canonical published hub this listing belongs to, resolved server-side. null when
@@ -20,19 +28,14 @@ export interface HomeListingCard extends ListingCardData {
 
 export type MlsTabKey = 'wealth' | 'buy' | 'sell' | 'rent';
 
+/** MILTON RIGHT NOW, public rows only. The all-Milton typical, the 12-month sales count, the
+ *  days on market and "sold so far this month" left with MC-046 Stage 1: each is derived
+ *  from VOW records and none may reach a signed-out reader, in the markup or the payload. */
 export interface MiltonStats {
-  /** raw dollars, e.g. 1_090_000 — component formats to $1.09M */
-  typicalPrice: number;
-  sold12mo: number;
+  /** active listings advertised today */
   onMarket: number;
-  /** days on market */
-  dom: number;
-  /** active sale listings first advertised in the last 7 days */
+  /** active sale listings first advertised in the last 7 days (R13: kept) */
   newThisWeek: number;
-  /** calendar month TO DATE — the label must say "so far", because it is */
-  soldMonthToDate: number;
-  /** k-gated: null below K_ANON_PRICE, never 0 */
-  soldMonthTypical: number | null;
   /** Milton rentals available today — the SAME figure /rentals publishes. Not sale-side. */
   rentalsAvailable: number;
 }
@@ -122,19 +125,19 @@ export interface MlsExploreConfig {
 }
 
 /** THE MAP'S FIXED DESTINATIONS (MH-006, MA-004 change 9): the guides, the school and mosque
- *  counts and the current Market Watch edition, read once by getFooterMap() and carried by
+ *  counts (MC-046 R6: no Market Watch edition), read once by getFooterMap() and carried by
  *  every FooterData so the footer on every page reaches every entity kind in one click. */
 export interface FooterMap {
   guides: { slug: string; title: string }[];
   schoolCount: number;
   mosqueCount: number;
-  /** the latest published edition, or null before the first */
-  edition: { weekOf: string; label: string } | null;
 }
 
 export interface FooterData extends FooterMap {
   /** EVERY published hub. A truncated list cost 19 crawlable links and bought nothing. */
   neighbourhoods: { name: string; slug: string }[];
+  /** published street pages with the most homes for sale now, ties alphabetical (MC-046 R9:
+   *  the list was ranked by recency-weighted sales, and the rank itself disclosed them) */
   topStreets: { name: string; slug: string }[];
   neighbourhoodCount: number;
   /** SURFACED ENTITIES — streets that may appear in search and hub ladders (738). */
@@ -147,21 +150,15 @@ export interface HomepageData {
   stats: MiltonStats;
   hero: HeroContent;
   trust: TrustInfo;
-  /** the 22 published hubs, priced by their own page's k-gated aggregate */
+  /** the published hubs, most active listings first, ties alphabetical */
   neighbourhoods: HubCard[];
   /** PAGES, the set the sitemap emits. Not the surfaced-entity count. */
   streetPageCount: number;
-  /** all-Milton 12-month sold-to-ask as a PERCENT (98.1), k-gated. null = suppressed */
-  soldToAskPct: number | null;
   videoStreets: StreetVideoCard[];
   videoCount: number;
   newestListings: HomeListingCard[];
-  inDemandStreets: { name: string; slug: string }[];
-  // Optional: the Board is the homepage's market read now, so getHomepageData no
-  // longer computes these (perf trim). mockData still provides them for reference.
-  commentary?: MarketCommentary;
+  // Optional and never set by getHomepageData; kept for the unused MLS-explore section.
   neighbourhoodCount?: number;
-  vipStreets?: VipStreet[];
   streetCount?: number;
   mls?: MlsExploreConfig; // homepage no longer renders the MLS-explore section; kept optional for reuse
 

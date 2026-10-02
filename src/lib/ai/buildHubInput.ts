@@ -19,7 +19,7 @@
 // page-render time; consumed by WS5 generation orchestration + the WS4 fixtures.
 
 import { prisma } from "@/lib/prisma";
-import { getSoldDb } from "@/lib/db";
+import { soldDb, scopedVowAccess, type Sql } from "@/lib/vow/door";
 import { expandStreetName } from "@/lib/street-data";
 import { surfacedStreetWhere } from "@/lib/streetSurface";
 import type {
@@ -42,10 +42,10 @@ import { DISPLAY_MONTHS } from "@/lib/vowWindow";
 // MC-037: the display window (src/lib/vowWindow.ts), whole quarters only; was 30 months.
 const TREND_WINDOW_MONTHS = DISPLAY_MONTHS;
 
-type SqlClient = NonNullable<ReturnType<typeof getSoldDb>>;
+type SqlClient = Sql;
 
 function querySold<T>(build: (db: SqlClient) => unknown): Promise<T[]> {
-  const sd = getSoldDb();
+  const sd = soldDb(scopedVowAccess());
   if (!sd) return Promise.resolve([] as T[]);
   return (build(sd) as Promise<T[]>).catch(() => [] as T[]);
 }

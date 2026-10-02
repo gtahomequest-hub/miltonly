@@ -13,7 +13,7 @@
 // sale compute function is what DB4 imports, and it structurally can't read
 // lease rows. Don't merge them into a single function on a refactor.
 
-import { requireSoldDb, requireAnalyticsDb } from "./db";
+import { requireSoldDb, requireAnalyticsDb, type VowAccess } from "./vow/door";
 import { invalidateMany } from "./cache";
 import type { MarketTemperature } from "./db-types";
 
@@ -36,9 +36,9 @@ function toNum(v: unknown): number | null {
 // STREET — SALE stats (transaction_type = 'For Sale' only)
 // ────────────────────────────────────────────────────────────────────────
 
-export async function computeStreetSaleStats(streetSlug: string): Promise<void> {
-  const sold = requireSoldDb();
-  const analytics = requireAnalyticsDb();
+export async function computeStreetSaleStats(access: VowAccess, streetSlug: string): Promise<void> {
+  const sold = requireSoldDb(access);
+  const analytics = requireAnalyticsDb(access);
 
   const rows = (await sold`
     WITH d90 AS (
@@ -176,9 +176,9 @@ export async function computeStreetSaleStats(streetSlug: string): Promise<void> 
 // Rents break down by bed count (they vary ~3x by bed count).
 // ────────────────────────────────────────────────────────────────────────
 
-export async function computeStreetLeaseStats(streetSlug: string): Promise<void> {
-  const sold = requireSoldDb();
-  const analytics = requireAnalyticsDb();
+export async function computeStreetLeaseStats(access: VowAccess, streetSlug: string): Promise<void> {
+  const sold = requireSoldDb(access);
+  const analytics = requireAnalyticsDb(access);
 
   const rows = (await sold`
     WITH d90 AS (
@@ -257,9 +257,9 @@ export async function computeStreetLeaseStats(streetSlug: string): Promise<void>
 // NEIGHBOURHOOD — SALE stats
 // ────────────────────────────────────────────────────────────────────────
 
-export async function computeNeighbourhoodSaleStats(neighbourhood: string): Promise<void> {
-  const sold = requireSoldDb();
-  const analytics = requireAnalyticsDb();
+export async function computeNeighbourhoodSaleStats(access: VowAccess, neighbourhood: string): Promise<void> {
+  const sold = requireSoldDb(access);
+  const analytics = requireAnalyticsDb(access);
 
   const rows = (await sold`
     WITH d90 AS (
@@ -389,9 +389,9 @@ export async function computeNeighbourhoodSaleStats(neighbourhood: string): Prom
 // NEIGHBOURHOOD — LEASE stats
 // ────────────────────────────────────────────────────────────────────────
 
-export async function computeNeighbourhoodLeaseStats(neighbourhood: string): Promise<void> {
-  const sold = requireSoldDb();
-  const analytics = requireAnalyticsDb();
+export async function computeNeighbourhoodLeaseStats(access: VowAccess, neighbourhood: string): Promise<void> {
+  const sold = requireSoldDb(access);
+  const analytics = requireAnalyticsDb(access);
 
   const rows = (await sold`
     WITH d90 AS (
@@ -467,12 +467,12 @@ export async function computeNeighbourhoodLeaseStats(neighbourhood: string): Pro
 // Orchestrator — runs all four compute functions in batches of 10.
 // ────────────────────────────────────────────────────────────────────────
 
-export async function computeAllStats(): Promise<{
+export async function computeAllStats(access: VowAccess): Promise<{
   streetsSale: number; streetsLease: number;
   neighbourhoodsSale: number; neighbourhoodsLease: number;
   durationMs: number;
 }> {
-  const sold = requireSoldDb();
+  const sold = requireSoldDb(access);
   const t0 = Date.now();
   const BATCH = 10;
 
@@ -484,7 +484,7 @@ export async function computeAllStats(): Promise<{
       AND sold_date <= NOW()
   `) as Array<{ street_slug: string }>;
   for (let i = 0; i < saleStreets.length; i += BATCH) {
-    await Promise.all(saleStreets.slice(i, i + BATCH).map((r) => computeStreetSaleStats(r.street_slug)));
+    await Promise.all(saleStreets.slice(i, i + BATCH).map((r) => computeStreetSaleStats(access, r.street_slug)));
   }
 
   const leaseStreets = (await sold`
@@ -495,7 +495,7 @@ export async function computeAllStats(): Promise<{
       AND sold_date <= NOW()
   `) as Array<{ street_slug: string }>;
   for (let i = 0; i < leaseStreets.length; i += BATCH) {
-    await Promise.all(leaseStreets.slice(i, i + BATCH).map((r) => computeStreetLeaseStats(r.street_slug)));
+    await Promise.all(leaseStreets.slice(i, i + BATCH).map((r) => computeStreetLeaseStats(access, r.street_slug)));
   }
 
   const saleNbhds = (await sold`
@@ -506,7 +506,7 @@ export async function computeAllStats(): Promise<{
       AND sold_date <= NOW()
   `) as Array<{ neighbourhood: string }>;
   for (let i = 0; i < saleNbhds.length; i += BATCH) {
-    await Promise.all(saleNbhds.slice(i, i + BATCH).map((r) => computeNeighbourhoodSaleStats(r.neighbourhood)));
+    await Promise.all(saleNbhds.slice(i, i + BATCH).map((r) => computeNeighbourhoodSaleStats(access, r.neighbourhood)));
   }
 
   const leaseNbhds = (await sold`
@@ -517,7 +517,7 @@ export async function computeAllStats(): Promise<{
       AND sold_date <= NOW()
   `) as Array<{ neighbourhood: string }>;
   for (let i = 0; i < leaseNbhds.length; i += BATCH) {
-    await Promise.all(leaseNbhds.slice(i, i + BATCH).map((r) => computeNeighbourhoodLeaseStats(r.neighbourhood)));
+    await Promise.all(leaseNbhds.slice(i, i + BATCH).map((r) => computeNeighbourhoodLeaseStats(access, r.neighbourhood)));
   }
 
   return {

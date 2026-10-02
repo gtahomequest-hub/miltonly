@@ -12,10 +12,10 @@ export type { StreetVideoCard, HubSchool };
 export type HubProfile = 'urban' | 'rural';
 
 export interface HubStats {
-  typicalPrice: number | null; // null => k-anon silent (thin activity)
-  sold12mo: number | null;
+  /** IDX active sale listings today. */
   onMarket: number | null;
-  dom: number | null; // days on market
+  // MC-046 Stage 1 (VOW item 40): the typical sold price, the 12-month sale count and days on
+  // market left the visitor view, and with them their fields.
 }
 
 /** the fast "is this neighbourhood right for me?" answer */
@@ -56,12 +56,9 @@ export interface HubMarketCompare {
 export interface HubStreetCard {
   name: string;
   slug: string;
-  soldCount: number | null;
-  /** THE STREET PAGE'S OWN TYPICAL. null => below the k floor, and the row says so. */
-  typicalPriceRounded: number | null;
-  /** the mandatory window+sample disclosure that travels with the price */
-  basis: string | null;
-  /** the street carries a filmed clip — the ladder marks it, the strip above shows it */
+  /** IDX active sale listings on the street today; the ladder is ordered by it (MC-046, R9) */
+  activeCount: number;
+  /** the street carries a filmed clip: the ladder marks it, the strip above shows it */
   hasVideo: boolean;
   signal?: string; // optional badge: "Most active", "Top sold"
 }
@@ -69,7 +66,6 @@ export interface HubStreetCard {
 export interface HubVipStreet {
   name: string;
   slug: string;
-  soldCount: number;
 }
 
 export interface HubCondoBuilding {
@@ -83,12 +79,11 @@ export interface HubFaq {
   answer: string;
 }
 
-/** A nearby hub's card. Every line on it is derived; the hand-written character line is gone. */
+/** A nearby hub's card. Every line on it is derived; the hand-written character line is gone.
+ *  MC-046: the sibling's typical sold price and sale count are gone from the card. */
 export interface HubSibling {
   name: string;
   slug: string;
-  typicalPriceRounded: number | null; // null => k-anon silent, and the card says so
-  salesCount: number; // 12-month sales, the sample behind the typical
   streetPages: number; // published street guides in that hub
   distanceKm: number | null; // boundary centre to boundary centre; null when either has no polygon
 }
@@ -127,10 +122,6 @@ export interface HubData {
   videoStreets?: StreetVideoCard[];
   /** schools standing inside the Town's boundary for this hood. Empty renders nothing. */
   schools?: HubSchool[];
-  /** the sample and window behind stats.typicalPrice, e.g. "across 159 sales in the last 12 months" */
-  typicalBasis?: string | null;
-  /** the same disclosure for the Milton-wide figure the market section compares against */
-  miltonBasis?: string | null;
   /** true when `siblings` are the nearest by the Town's polygons; false when the hub has no
    *  polygon and the list is simply the other hubs of its tier. The heading depends on it. */
   nearbyByDistance?: boolean;
@@ -157,6 +148,8 @@ export interface HubData {
   // the tenure render hides the hero stat tiles, the at-a-glance card, and the
   // market section entirely (editorial + FAQ + CTA only). Number-free by design.
   nullStats?: boolean;
+  /** MC-046: the page's one neutral line, where a main sold block was removed (tenure hubs). */
+  soldLine?: { subject: string; returnPath: string };
   // COMPARE FACTS (optional, additive). Surfaces the SAME already-computed,
   // k-anon-gated numbers getTenureHubData bakes into prose, as a structured
   // object — so the /compare two-column composer can render a grounded
@@ -167,15 +160,14 @@ export interface HubData {
 }
 
 /** Structured, k-safe facts for the /compare side-by-side table. Mirrors the
- *  numbers getTenureHubData already computes; nulls are silent (never $0/NaN). */
+ *  numbers getTenureHubData already computes; nulls are silent (never $0/NaN).
+ *  IDX only since MC-046 Stage 1: soldTypical, soldCount and dom (all derived from sold
+ *  records) are gone from the shape. */
 export interface TenureCompareFacts {
   activeCount: number | null; // onMarket inventory count (unfiltered)
-  medianList: number | null; // active sale-only median LIST price
+  medianList: number | null; // active sale-only typical ASKING price (the median of today's list prices)
   listLo: number | null; // active sale-only min/max LIST (plausibility-floored)
   listHi: number | null;
-  soldTypical: number | null; // avg sold 12mo, k-anon gated (K>=5)
-  soldCount: number | null; // DISTINCT mls sold 12mo
-  dom: number | null; // avg days on market (sold-derived)
   subtypeMedians: { label: string; value: number }[]; // k-gated active medians
   hasFee: boolean; // this tenure carries a monthly fee (condo) vs none (freehold)
   feeLo: number | null; // typical monthly-fee range, k-gated (condo only)

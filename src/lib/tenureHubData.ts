@@ -12,21 +12,23 @@
 // honestly (no active/sold in a segment -> omit the number, never $0/NaN), so the
 // same composer renders POTL as a clean editorial-only page.
 //
-// SOURCES (the nothing-fake split):
-//   ACTIVE  -> DB1 Prisma Listing, active sale-only LIST price (never blended).
-//   SOLD    -> DB2 getSoldDb() sold.sold_records (soldDate is null in DB1), with
-//              K_ANON_PRICE=5 / K_ANON_RANGE=10 discipline; sub-k -> silence.
+// SOURCES:
+//   ACTIVE  -> DB1 Prisma Listing, active sale-only LIST price (never blended), labelled
+//              "asking" wherever it is shown.
+//   MC-046 Stage 1 (PropTx VOW Best Practices item 40): the SOLD side is gone. The hero's
+//   "typical sold · 12 mo" and "sold · last 12 months", the commentary's "N sold ... typical
+//   price ... about D days", and compareFacts.soldTypical / soldCount / dom were all derived from
+//   DB2 sold records; the DB2 query that computed them is removed, not merely unread.
 //   The freehold set is matched on propertySubType (TRIMMED — PropTx ships
 //   "Semi-Detached " with a trailing space) and EXCLUDES condo-townhouses by
 //   construction. Never fall back to legacy propertyType (that carries the 45
 //   condo-towns = nothing-fake violation; the clean exclusion is the point).
 
 import { prisma } from "@/lib/prisma";
-import { getSoldDb } from "@/lib/db";
 import type { HubData, HubStats, HubFact, TenureCompareFacts } from "@/components/hub/types";
 import { fullPrice, compactPrice } from "@/components/hub/format";
 
-import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
+import { K_ANON_PRICE } from "@/lib/kAnon";
 
 // ---- config contract -------------------------------------------------------
 
@@ -51,7 +53,8 @@ export interface TenureConfig {
   priceFloor?: number; // default 0 — drop sub-floor anomalies (parking/locker) from PRICE stats only
   showFee?: boolean; // default false — compute + inject a typical monthly-fee range (condo)
   feeSentenceTemplate?: string; // {lo}/{hi} tokens; only used when showFee and fee data is k-safe
-  soldTail?: string; // default freehold tail — editorial sentence after the sold numbers
+  /** The subject of the page's neutral line (MC-046), e.g. "Milton freehold homes". Absent: no line. */
+  soldSubject?: string;
   // NULL-STATS mode (POTL): sub-k activity -> the seam runs NO stat queries and
   // returns editorial-only HubData (nullStats:true); the composer hides every
   // stat-bearing section. overviewParas supplies the body verbatim (the cost-
@@ -91,44 +94,7 @@ const median = (xs: number[]): number | null => {
   const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
 };
-interface SoldAgg {
-  n: number;
-  typical: number | null; // avg sold, k-anon gated
-  lo: number | null;
-  hi: number | null; // range, k-range gated
-  dom: number | null;
-}
-
-async function freeholdSold(subTypes: string[]): Promise<SoldAgg> {
-  const db = getSoldDb();
-  if (!db) return { n: 0, typical: null, lo: null, hi: null, dom: null };
-  try {
-    const rows = (await db`
-      SELECT COUNT(DISTINCT mls_number)::int AS n,
-             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
-             MIN(sold_price) AS lo, MAX(sold_price) AS hi,
-             AVG(days_on_market) AS dom
-      FROM sold.sold_records
-      WHERE city = 'Milton' AND perm_advertise = TRUE
-        AND transaction_type = 'For Sale'
-        AND TRIM(property_sub_type) = ANY(${subTypes}::text[])
-        AND sold_date >= NOW() - INTERVAL '12 months'
-        AND sold_date <= NOW()
-    `) as Array<{ n: number; avg_price: string | null; lo: string | null; hi: string | null; dom: string | null }>;
-    const r = rows[0];
-    const n = r?.n ?? 0;
-    const numOr = (v: string | null | undefined) => (v == null ? null : Math.round(parseFloat(v)));
-    return {
-      n,
-      typical: n >= K_ANON_PRICE ? numOr(r?.avg_price) : null,
-      lo: n >= K_ANON_RANGE ? numOr(r?.lo) : null,
-      hi: n >= K_ANON_RANGE ? numOr(r?.hi) : null,
-      dom: numOr(r?.dom),
-    };
-  } catch {
-    return { n: 0, typical: null, lo: null, hi: null, dom: null };
-  }
-}
+// MC-046: freeholdSold (the DB2 sold aggregate: count, typical, range, days on market) is removed.
 
 // ---- the seam --------------------------------------------------------------
 
@@ -162,7 +128,7 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
       profile: "urban",
       character: cfg.character,
       intents: cfg.intents,
-      stats: { typicalPrice: null, sold12mo: null, onMarket: null, dom: null },
+      stats: { onMarket: null },
       // HubAtAGlance became a list of derived facts when the neighbourhood hubs dropped their
       // static claims. A TENURE hub is a different animal: it explains what a tenure IS, so its
       // glance entries are definitional rather than measured, and each says so in its basis.
@@ -190,7 +156,7 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
       // all-null facts so the /compare table degrades to silent cells cleanly.
       compareFacts: {
         activeCount: null, medianList: null, listLo: null, listHi: null,
-        soldTypical: null, soldCount: null, dom: null, subtypeMedians: [],
+        subtypeMedians: [],
         hasFee: Boolean(cfg.showFee), feeLo: null, feeHi: null,
       },
     };
@@ -206,9 +172,6 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
   ];
   const costMiddle = cfg.costMiddle ?? "subtype";
   const priceFloor = cfg.priceFloor ?? 0;
-  const soldTail =
-    cfg.soldTail ??
-    "Freehold is the deepest, most liquid segment of the Milton market — detached homes lead it, with freehold townhomes and semis trading faster at lower prices.";
 
   // ACTIVE side — DB1 Prisma, active SALE-only LIST price, clean subType filter.
   const activeRows = await prisma.listing.findMany({
@@ -275,23 +238,17 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
     }
   }
 
-  // SOLD side — DB2 analytics, k-anon gated.
-  const sold = await freeholdSold(cfg.subTypes);
-
   // If there is genuinely nothing to ground (POTL-style null config), the page
   // still renders editorial-only: stats all null, numeric editorial dropped.
   const hasActive = activeCount > 0 && medianList !== null;
 
   const stats: HubStats = {
-    typicalPrice: sold.typical, // sold avg, k-anon (null -> hero shows "not stated")
-    sold12mo: sold.n > 0 ? sold.n : null,
     onMarket: activeCount > 0 ? activeCount : null,
-    dom: sold.dom,
   };
 
   // ---- editorial assembly (inject live numbers; drop the sentence if null) ----
   const costLive = hasActive
-    ? `Right now Milton has ${activeCount} active ${activeCount === 1 ? activeNoun.one : activeNoun.many}, with a median asking price of ${fullPrice(medianList as number)}${loList && hiList ? ` and asking prices running from ${fullPrice(loList)} to ${fullPrice(hiList)}` : ""}.`
+    ? `Right now Milton has ${activeCount} active ${activeCount === 1 ? activeNoun.one : activeNoun.many}, with a typical asking price of ${fullPrice(medianList as number)}${loList && hiList ? ` and asking prices running from ${fullPrice(loList)} to ${fullPrice(hiList)}` : ""}.`
     : "";
   // by-subtype cost sentence: "<label0> typically ask <p0>, <labelN> <pN>"
   const subParts: string[] = [];
@@ -314,17 +271,8 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
   const priceRange =
     loList && hiList ? `${compactPrice(loList)} – ${compactPrice(hiList)}` : null;
 
-  // market commentary (sold-derived; honest silence if sub-k)
+  // market commentary: active inventory only (MC-046: the sold paragraph is gone)
   const commentaryParas: string[] = [];
-  if (sold.n >= K_ANON_PRICE && sold.typical) {
-    commentaryParas.push(
-      `Over the last 12 months, ${sold.n.toLocaleString("en-CA")} ${activeNoun.many} sold across Milton at a typical price of ${fullPrice(sold.typical)}${sold.dom ? `, taking about ${sold.dom} days on market` : ""}. ${soldTail}`,
-    );
-  } else {
-    commentaryParas.push(
-      `There isn't enough recent ${inventoryNoun} sales activity to publish a reliable typical sold price right now. Active asking prices above are the better current guide; ask Aamir for the latest closed comparables.`,
-    );
-  }
   if (bedBuckets.length) {
     const bedText = bedBuckets
       .sort((a, b) => b.count - a.count)
@@ -339,8 +287,8 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
     .map((s) => ({
       metricLabel: s.compareLabel,
       neighbourhoodValue: fullPrice(s.value as number),
-      miltonValue: medianList ? fullPrice(medianList) : "—",
-      delta: "active asking median",
+      miltonValue: medianList ? fullPrice(medianList) : "",
+      delta: "typical asking price today",
     })) as HubData["marketCompare"];
 
   // COMPARE FACTS — the same k-safe numbers above, surfaced structurally for the
@@ -350,9 +298,6 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
     medianList,
     listLo: loList,
     listHi: hiList,
-    soldTypical: sold.typical,
-    soldCount: sold.n > 0 ? sold.n : null,
-    dom: sold.dom,
     subtypeMedians: subMeds
       .filter((s): s is typeof s & { value: number } => s.value != null)
       .map((s) => ({ label: s.compareLabel, value: s.value })),
@@ -405,6 +350,7 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
     ctaBuyer: cfg.ctaBuyer,
     ctaSeller: cfg.ctaSeller,
     compareFacts,
+    ...(cfg.soldSubject ? { soldLine: { subject: cfg.soldSubject, returnPath: `/${cfg.slug}` } } : {}),
   } satisfies HubData;
 }
 
@@ -441,6 +387,7 @@ export const FREEHOLD_CONFIG: TenureConfig = {
     { label: "Monthly fee", value: "None — you own the land outright" },
     { label: "vs Condo", value: "Full control, full maintenance responsibility" },
   ],
+  soldSubject: "Milton freehold homes",
   faqs: [
     {
       question: "What does freehold mean in Milton?",
@@ -476,7 +423,7 @@ export const FREEHOLD_CONFIG: TenureConfig = {
     buttonLabel: "Get my home value",
     href: "/sell",
   },
-  marketSourceLabel: "PropTx MLS® sold data, last 12 months · Milton",
+  marketSourceLabel: "PropTx MLS® active listings, today · Milton",
 };
 
 // ---------------------------------------------------------------------------
@@ -503,8 +450,7 @@ export const CONDO_CONFIG: TenureConfig = {
   showFee: true,
   feeSentenceTemplate:
     "Across active Milton condo listings, monthly fees typically run from {lo} to {hi} — but they vary widely by building, unit size, and what the fee includes, so treat the range as a starting point, not a rule.",
-  soldTail:
-    "Condos are Milton's most accessible ownership tier — apartments lead on price, while condo townhomes trade higher for the extra space and a more freehold-like feel.",
+  soldSubject: "Milton condos",
   glanceLabels: { vs: "vs Freehold" },
   breadcrumbLabel: "Condos",
   sectionTitles: {
@@ -569,7 +515,7 @@ export const CONDO_CONFIG: TenureConfig = {
     buttonLabel: "Get my condo's value",
     href: "/sell",
   },
-  marketSourceLabel: "PropTx MLS® sold data, last 12 months · Milton",
+  marketSourceLabel: "PropTx MLS® active listings, today · Milton",
 };
 
 // ---------------------------------------------------------------------------

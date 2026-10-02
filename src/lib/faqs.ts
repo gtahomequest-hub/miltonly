@@ -1,5 +1,9 @@
 import type { FAQItem } from "@/lib/schema";
 
+// MC-046 Stage 1: the days-on-market answer ("an average of 18 days") and the price-appreciation
+// claim were derived from sold records (VOW), so they are gone. No homepage surface renders this
+// set today (FAQSection has no caller); it is kept clean for when one does.
+
 export const homepageFAQs: FAQItem[] = [
   {
     question: "What is the average home price in Milton Ontario?",
@@ -12,14 +16,9 @@ export const homepageFAQs: FAQItem[] = [
       "Milton's most popular neighbourhoods include Willmott, Coates, Clarke, Beaty, Dempsey, Hawthorne Village, and Old Milton. Each offers different price ranges, school catchments, and proximity to the Milton GO station. Use the Miltonly neighbourhood comparison tool to compare them side by side.",
   },
   {
-    question: "How long does it take to sell a home in Milton Ontario?",
-    answer:
-      "Homes in Milton Ontario sell in an average of 18 days on market based on current PropTx MLS® data. The spring market (February to April) typically sees the fastest sales and highest prices.",
-  },
-  {
     question: "Is Milton Ontario a good place to invest in real estate?",
     answer:
-      "Milton is one of Canada's fastest growing cities and has shown consistent price appreciation. Key investment drivers include GO train access to Toronto, top-ranked schools, planned population growth to 228,000, and significant new development. Use Miltonly's free investor report for detailed yield and growth data by neighbourhood.",
+      "Milton is one of Canada's fastest growing cities. Key investment drivers include GO train access to Toronto, top-ranked schools, planned population growth to 228,000, and significant new development. Use Miltonly's free investor report for detailed yield and growth data by neighbourhood.",
   },
   {
     question:

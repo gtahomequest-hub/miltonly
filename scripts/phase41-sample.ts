@@ -1,6 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import { generateStreetContent } from '@/lib/generateStreet';
 import { writeFileSync } from 'fs';
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 
 // Force Phase 4.1 v2 path for this run
 process.env.AI_PROVIDER = 'phase41_v2';

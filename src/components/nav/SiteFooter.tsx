@@ -17,7 +17,7 @@ import type { FooterData } from "@/components/home/types";
 import type { NavContext } from "./megaTypes";
 import { HomeFooter } from "../home/HomeFooter";
 
-const EMPTY: FooterData = { neighbourhoods: [], topStreets: [], neighbourhoodCount: 0, streetCount: 0, streetPageCount: 0, guides: [], schoolCount: 0, mosqueCount: 0, edition: null };
+const EMPTY: FooterData = { neighbourhoods: [], topStreets: [], neighbourhoodCount: 0, streetCount: 0, streetPageCount: 0, guides: [], schoolCount: 0, mosqueCount: 0 };
 
 /** `context` is the page's subject; the footer's brief form records it. See NavContext. */
 export default async function SiteFooter({ context }: { context?: NavContext } = {}) {

@@ -310,7 +310,8 @@ async function main() {
     ["src/app/api/auth/saved-listings/route.ts", '"saved-listings"'],
     ["src/app/listings/page.tsx", '"listings-grid"'],
     ["src/app/sold/page.tsx", '"sold-page"'],
-    ["src/components/vow/VowGate.tsx", '"neighbourhood-records"'],
+    // MC-046: VowGate.tsx ("neighbourhood-records") was dead code and is deleted; the kind stays
+    // in VOW_ACCESS_KINDS for the gated neighbourhood ledger (Stage 2).
   ];
   for (const [f, kind] of SURFACES) {
     const src = readFileSync(f, "utf8");
@@ -329,7 +330,9 @@ async function main() {
   const EXEMPT = new Set([
     "src/lib/vow-access.ts",
     "src/lib/sold-data.ts",
-    "src/components/street/NeighbourhoodSoldBlock.tsx",
+    // MC-046: the door issues a reader's access from the same rule; the surface that uses the
+    // access writes the trail, as the fetchers' callers do.
+    "src/lib/vow/door.ts",
   ]);
   const gated: string[] = [];
   const walk = (dir: string) => {
@@ -347,7 +350,7 @@ async function main() {
     ok(readFileSync(f, "utf8").includes("logVowAccess("), `${f} gates on canSeeVowRecords and writes the trail`);
   }
   ok(gated.length >= SURFACES.length, `the grep found the listed surfaces (${gated.length} gated files)`);
-  eq(SURFACES.length, 8, "eight surfaces write the trail");
+  eq(SURFACES.length, 7, "seven surfaces write the trail (MC-046 deleted the dead VowGate)");
   for (const f of ["src/app/api/streets/[slug]/sold-records/route.ts", "src/app/api/sold/route.ts", "src/app/api/sold-stats/route.ts", "src/app/api/listings/[mlsNumber]/vow/route.ts", "src/app/api/auth/saved-listings/route.ts", "src/app/api/auth/save-listing/route.ts", "src/app/api/auth/acknowledge-vow/route.ts"]) {
     ok(readFileSync(f, "utf8").includes("await touchSession()"), `${f} winds the inactivity clock`);
   }

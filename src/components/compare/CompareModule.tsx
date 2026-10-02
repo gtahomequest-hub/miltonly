@@ -15,8 +15,8 @@ import "./CompareModule.css";
 import React from "react";
 import { compactPrice } from "../hub/format";
 
-/** A live two-value median contrast, e.g. Freehold ~$1.08M vs Condo ~$599K.
- *  Sourced from comparisonData.compareFacts; null when either side is sub-k. */
+/** A live two-value typical ASKING contrast, e.g. Freehold ~$1.08M vs Condo ~$599K, over today's
+ *  active listings. Sourced from comparisonData.compareFacts; null when either side is sub-k. */
 export interface CompareContrast {
   aLabel: string;
   aValue: number;
@@ -42,6 +42,8 @@ export function CompareModule({ title, sub, label, href, contrast }: CompareModu
             <div className="cm-s">{sub}</div>
             {contrast && (
               <div className="cm-contrast">
+                {/* MC-046: the contrast is today's typical ASKING price, and says so. */}
+                <span className="cm-vs">Typical asking</span>
                 <span>
                   {contrast.aLabel} <b>~${compactPrice(contrast.aValue)}</b>
                 </span>

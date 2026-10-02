@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSMS } from "@/lib/smsAlert";
 import { revalidateListingSurfaces } from "@/lib/revalidateSurfaces";
+import { vowSystemAccess } from "@/lib/vow/door";
 
 export const maxDuration = 60;
 
@@ -20,10 +21,10 @@ export async function GET(request: NextRequest) {
  * — meaning it's been removed from the feed and must be expired.
  */
 export async function POST(request: NextRequest) {
-  const secret =
-    request.headers.get("authorization")?.replace("Bearer ", "") ||
-    request.nextUrl.searchParams.get("secret");
-  if (secret !== process.env.CRON_SECRET) {
+  // MC-046 R16: this route reads or writes VOW data, so it opens the door by the Authorization
+  // header only (constant time); a `?secret=` query parameter is refused, and an unset
+  // CRON_SECRET refuses everyone.
+  if (!vowSystemAccess(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

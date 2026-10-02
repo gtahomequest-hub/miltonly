@@ -18,13 +18,10 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
-import { getMiltonSoldAggregates, type SoldAggregatesData } from "@/lib/soldAggregates";
 import { schools, type School } from "@/lib/schools";
 import { BOC_POLICY_RATE } from "@/data/policyRate";
 import { neighbourhoodDisplayName } from "@/lib/content/neighbourhoodName";
-import type { GroundedFigure, GroundedFigures } from "@/lib/content/groundedFigures";
-
-const TWELVE = "trailing 12 months";
+import type { GroundedFigure } from "@/lib/content/groundedFigures";
 
 export function fig(
   key: string,
@@ -36,43 +33,11 @@ export function fig(
   return { key, value, label, kind, source };
 }
 
-// ── the sold layer, shared by four of the six guides ──────────────────────
-
-export interface SoldFigures {
-  data: SoldAggregatesData;
-  bundle: GroundedFigures;
-}
-
-export async function getSoldFigures(): Promise<SoldFigures> {
-  const data = await getMiltonSoldAggregates();
-  const o = data.overall;
-
-  const figures: GroundedFigure[] = [
-    fig("sold.count", o.count, `sales, ${TWELVE}`, "count", "getMiltonSoldOverall"),
-    fig("sold.median", o.medianPrice, `typical sold price, ${TWELVE}`, "dollar", "getMiltonSoldOverall"),
-    fig("sold.mean", o.meanPrice, `average sold price, ${TWELVE}`, "dollar", "getMiltonSoldOverall"),
-    fig("sold.bandLow", o.bandLow, `middle-half low, ${TWELVE}`, "dollar", "getMiltonSoldOverall"),
-    fig("sold.bandHigh", o.bandHigh, `middle-half high, ${TWELVE}`, "dollar", "getMiltonSoldOverall"),
-    fig("sold.dom", o.avgDom, `days on market, ${TWELVE}`, "days", "getMiltonSoldOverall"),
-    fig("sold.soldToAsk", o.soldToAskPct, `sold to ask, ${TWELVE}`, "percent", "getMiltonSoldOverall"),
-  ];
-
-  for (const t of data.byType) {
-    figures.push(fig(`type.${t.slug}.count`, t.count, `${t.label} sales, ${TWELVE}`, "count", "getMiltonSoldByType"));
-    figures.push(fig(`type.${t.slug}.median`, t.medianPrice, `typical ${t.label.toLowerCase()} price, ${TWELVE}`, "dollar", "getMiltonSoldByType"));
-  }
-  for (const n of data.byNeighbourhood) {
-    figures.push(fig(`nbhd.${n.slug}.count`, n.count, `${n.name} sales, ${TWELVE}`, "count", "getMiltonSoldByNeighbourhood"));
-    figures.push(fig(`nbhd.${n.slug}.typical`, n.typicalPrice, `typical ${n.name} price, ${TWELVE}`, "dollar", "getMiltonSoldByNeighbourhood"));
-  }
-  for (const q of data.quarterly) {
-    figures.push(fig(`q.${q.label}.count`, q.count, `${q.label} sales`, "count", "getMiltonSoldQuarterly"));
-    figures.push(fig(`q.${q.label}.median`, q.medianPrice, `typical ${q.label} price`, "dollar", "getMiltonSoldQuarterly"));
-  }
-
-  const entities = [config.CITY_NAME, ...data.byNeighbourhood.map((n) => n.name)];
-  return { data, bundle: { figures, entities } };
-}
+// ── the sold layer is gone (MC-046 Stage 1, R6) ───────────────────────────
+//
+// getSoldFigures() read getMiltonSoldAggregates(): the typical, average, band, days on market,
+// sold-to-ask, by-type, by-neighbourhood and quarterly figures, all derived from VOW records. No
+// guide prints one any more, so no guide reads them.
 
 // ── condo fees: per active listing, as stated, or nothing ─────────────────
 //

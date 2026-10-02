@@ -18,7 +18,7 @@ export const revalidate = 86400;
 
 export const metadata: Metadata = genMeta({
   title: `${config.CITY_NAME} Real Estate Guides`,
-  description: `Guides to buying, selling and living in ${config.CITY_NAME}, ${config.CITY_PROVINCE}, built on this site's own sold data. Every figure carries its window and its sample size.`,
+  description: `Guides to buying, selling and living in ${config.CITY_NAME}, ${config.CITY_PROVINCE}: condo fees, first-home costs, schools, parking and the GO train, from this site's own data, the Town's rules and GO Transit's timetable.`,
   canonical: `${config.SITE_URL}/guides`,
 });
 
@@ -36,7 +36,8 @@ export default async function GuidesPage() {
       "@type": "CollectionPage",
       name: `${config.CITY_NAME} Real Estate Guides`,
       url: `${config.SITE_URL}/guides`,
-      hasPart: GUIDE_DEFS.map((g) => ({
+      // A noindex guide (MC-046 Stage 1) is not named as a part of the indexed collection.
+      hasPart: GUIDE_DEFS.filter((g) => !g.noindex).map((g) => ({
         "@type": "Article",
         headline: g.title,
         url: `${config.SITE_URL}/guides/${g.slug}`,

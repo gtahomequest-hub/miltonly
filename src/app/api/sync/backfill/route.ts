@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { vowSystemAccess } from "@/lib/vow/door";
 
 export const maxDuration = 30;
 
@@ -8,10 +9,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const secret =
-    request.headers.get("authorization")?.replace("Bearer ", "") ||
-    request.nextUrl.searchParams.get("secret");
-  if (secret !== process.env.CRON_SECRET) {
+  // MC-046 R16: this route counts listing rows of every status to queue generation, so it opens
+  // the VOW door by the Authorization header only; `?secret=` is refused.
+  if (!vowSystemAccess(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

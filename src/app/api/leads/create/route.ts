@@ -48,9 +48,8 @@ export async function POST(req: NextRequest) {
     ok: true,
     lead_id: result.leadId,
     env: result.env,
-    // The market-pulse reveal, when the surface asked for one. Unlike `diagnostics` this is
-    // returned in production too: it is the thing the visitor unlocked, not a proof.
-    ...(result.stats !== undefined ? { stats: result.stats } : {}),
+    // MC-046 R15: no market stats in the response. They were VOW aggregates handed to an
+    // anonymous submitter; the market-pulse card now asks for a report instead.
     ...(result.diagnostics ? { diagnostics: result.diagnostics } : {}),
   });
 }

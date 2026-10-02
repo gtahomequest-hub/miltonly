@@ -16,7 +16,7 @@ const lpad = (s: string | number, n: number) => String(s).padStart(n);
 
 async function main() {
   const { prisma } = await import("@/lib/prisma");
-  const { getSoldDb } = await import("@/lib/db");
+  const { getSoldDb } = await import("./lib/vow-db");
   const { K_ANON_PRICE, K_ANON_RANGE } = await import("@/lib/kAnon");
   const sold = getSoldDb();
   if (!sold) throw new Error("SOLD_DATABASE_URL is not configured");

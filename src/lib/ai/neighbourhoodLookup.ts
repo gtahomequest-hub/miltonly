@@ -79,8 +79,8 @@ export async function getNeighbourhoodComparable(
 
   let rows: Db3Row[] = [];
   try {
-    const { getAnalyticsDb } = await import("@/lib/db");
-    const ad = getAnalyticsDb();
+    const { analyticsDb, scopedVowAccess } = await import("@/lib/vow/door");
+    const ad = analyticsDb(scopedVowAccess());
     if (!ad) return null;
 
     rows = await (ad`
@@ -118,8 +118,8 @@ export async function getNeighbourhoodComparable(
   // never carried the per-type count.
   //
   // Read the same rows the figure averages, count them, and floor on that.
-  const { getSoldDb } = await import("@/lib/db");
-  const sd = getSoldDb();
+  const { soldDb, scopedVowAccess } = await import("@/lib/vow/door");
+  const sd = soldDb(scopedVowAccess());
   if (!sd) return null;
   const dbType = dominantPropertyType.toLowerCase() === "townhouse" ? "town" : dominantPropertyType.toLowerCase();
   const agg = await (sd`

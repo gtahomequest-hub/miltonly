@@ -92,7 +92,6 @@ function counters() {
     deliveries: async (leadId) => {
       deliveries.push(leadId);
     },
-    marketPulse: async () => null,
   };
   const emails = () => confirmations.length + alerts.length + crm.length;
   return { deps, rows, confirmations, alerts, sms, crm, capi, watches, deliveries, emails };

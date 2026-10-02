@@ -4,7 +4,7 @@ import { config } from "@/lib/config";
 import { publishedStreetPageSlugs } from "@/lib/streetSurface";
 import { STREET_HEAD_REVISED_AT } from "@/lib/streetHead";
 import { schools } from "@/lib/schools";
-import { GUIDE_SLUGS } from "@/lib/guides/guides";
+import { INDEXED_GUIDE_SLUGS } from "@/lib/guides/guides";
 import { mosques } from "@/lib/mosques";
 
 export const dynamic = "force-dynamic";
@@ -122,35 +122,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     },
-    {
-      url: `${SITE_URL}/market-watch`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
+    // /market-watch and its editions left the sitemap at MC-046 Stage 1 (R6): the pages are
+    // `noindex, follow` since their sold statistics were removed.
   ];
 
-  // Guide pages — one per registry entry.
-  const guidePages: MetadataRoute.Sitemap = GUIDE_SLUGS.map((slug) => ({
+  // Guide pages: one per registry entry that stays indexed. A guide that lost a whole section with
+  // its sold figures (MC-046 Stage 1, R6) is noindex and is not listed.
+  const guidePages: MetadataRoute.Sitemap = INDEXED_GUIDE_SLUGS.map((slug) => ({
     url: `${SITE_URL}/guides/${slug}`,
     lastModified: now,
     changeFrequency: "weekly" as const,
     priority: 0.7,
-  }));
-
-  // Market Watch editions — published only. An edition is immutable once
-  // published, so lastModified is its publish time and never "now".
-  const editions = await prisma.marketEdition.findMany({
-    where: { status: "published" },
-    select: { weekOf: true, publishedAt: true, updatedAt: true },
-    orderBy: { weekOf: "desc" },
-    take: 104,
-  });
-  const editionPages: MetadataRoute.Sitemap = editions.map((e) => ({
-    url: `${SITE_URL}/market-watch/${e.weekOf}`,
-    lastModified: e.publishedAt ?? e.updatedAt,
-    changeFrequency: "yearly" as const,
-    priority: 0.6,
   }));
 
   // Neighbourhood hub pages — canonical slugs from the published HubContent set,
@@ -295,5 +277,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [...staticPages, ...guidePages, ...editionPages, ...neighbourhoodPages, ...streetPages, ...streetOverflowPages, ...condoPages, ...schoolPages, ...mosquePages, ...listingPages];
+  return [...staticPages, ...guidePages, ...neighbourhoodPages, ...streetPages, ...streetOverflowPages, ...condoPages, ...schoolPages, ...mosquePages, ...listingPages];
 }

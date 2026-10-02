@@ -3,17 +3,16 @@
 // (the loader the data window wires, mirroring getHubData / getCondoData). Layout
 // window consumes it here. All fields serializable (server -> client boundary).
 //
-// K-ANON CONTRACT (the whole reason this contract is shaped the way it is):
-//   - Any suppressible numeric field typed `number | null` === null  => render the
-//     SILENT state (.s-silent: italic + muted), NEVER a fabricated number.
-//   - Any pre-formatted suppressible value typed `string | null` === null => silent.
-//   - The loader (data window) owns the k-anon math (price k>=5, range k>=10) and
-//     passes null where getStreetPageData() currently suppresses. The design owns
-//     ONLY how silence LOOKS. It must never invent a value where one is null.
+// THE VISITOR VIEW (MC-046 Stage 1, PropTx VOW Best Practices item 40). Nothing in this seam is
+// derived from a sold, leased, expired or terminated record: every value is an IDX active
+// listing (asking prices, active counts), Town open data, or the registry. The sold view for
+// the street is the gated island (StreetSoldRecords), which reads its own route per session and
+// is not part of this seam. Every field is serializable (server -> client boundary), so a
+// VOW-derived field here would reach the client payload even where nothing renders it.
 //
-//   PROSE (sections[]) is already privacy-vetted at generation time — rendered
-//   verbatim, no per-paragraph logic. `placeholder: true` => no generated prose
-//   exists (render the "profile in preparation" state instead of the body).
+//   PROSE (sections[], faqs[]) is stored generation output. The mapper drops the market and
+//   neighbourhoodComparable sections, every numeric sentence, and every FAQ item on a VOW
+//   topic before it reaches this seam. `placeholder: true` => no generated prose exists.
 
 export type ProductTypeKey =
   | 'detached'
@@ -24,41 +23,24 @@ export type ProductTypeKey =
   | 'freehold-townhouse';
 
 // ───── Hero ─────────────────────────────────────────────────────────────────
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40): the hero carries IDX facts only. The
+// typical price, its range and basis, "Transactions tracked" and the sale and lease pills were
+// derived from sold and leased records and left the visitor view; the one neutral line
+// (SoldHistoryLine) stands where they were.
 
 export interface StreetStat {
   label: string;
-  /** null => silent. `kind` controls formatting of a non-null value. */
+  /** null => the tile is not rendered. `kind` controls formatting of a non-null value. */
   value: number | null;
-  kind: 'price' | 'count' | 'text';
-  /** when kind==='text', the string to show (value still drives silent gating via textValue===null) */
+  kind: 'count' | 'text';
+  /** when kind==='text', the string to show */
   textValue?: string | null;
-  /** optional sub-line (e.g. price range). null => omitted (e.g. range below k>=10). */
+  /** optional sub-line ("live listings · today") */
   sub?: string | null;
-  /** mandatory window+sample disclosure on a priced tile ("across 33 sales in the last
-   *  12 months"). null => not a priced tile. */
-  basis?: string | null;
-  /** copy shown in the silent state. Defaults to "sample too small to publish". */
-  silentNote?: string;
-}
-
-export interface ProductPill {
-  type: ProductTypeKey;
-  displayName: string;
-  count: number;
-  /** null => suppressed (k<5); the pill still shows its count and stays clickable. */
-  typicalPrice: number | null;
-  /** "typical" | "sample too small" | "typical / mo" */
-  priceLabel: string;
-  /** the section this pill lands on; null when no section renders for it (the pill is text) */
-  anchor: string | null;
 }
 
 export interface StreetHeroData {
-  stats: StreetStat[]; // up to 4 tiles (housing mix, typical price, transactions, active)
-  salePills: ProductPill[];
-  leasePills: ProductPill[]; // empty when leased_count < k
-  /** window disclosure for the lease pill ("last 12 months" / "last ~2 years"); null when no lease. */
-  leaseWindowNote?: string | null;
+  stats: StreetStat[]; // IDX only: active right now, and the housing mix of the active listings
 }
 
 // ───── Prose (the 8 + optional 9th generated sections) ───────────────────────
@@ -73,7 +55,7 @@ export interface StreetProseSection {
 
 export interface StreetFact {
   label: string;
-  value: string; // already suppressed upstream — a fact is simply absent when below k.
+  value: string; // IDX and registry facts only (MC-046): no sold- or leased-derived fact.
 }
 
 export interface NearbyPlace {
@@ -107,70 +89,17 @@ export interface StreetSidebar {
 
 // ───── Per-housing-type sections ─────────────────────────────────────────────
 
-export interface ChartPoint {
-  quarter: string; // "Q1 '25"
-  value: number;
-  count: number;
-}
-
+/** One home type listed on the street now (MC-046: IDX only). The sold rows (typical, band,
+ *  time on market, sold to ask, the closed-sale count and the quarterly chart) left the visitor
+ *  view; a card renders for a type with an active listing, never for a type with sales. */
 export interface TypeBlock {
   type: ProductTypeKey;
   displayName: string;
   intro: string;
-  // Pre-formatted from getStreetPageData's already-suppressed StatCell[] (k-anon
-  // applied upstream). null => the cell was suppressed => render the .s-silent state.
-  typicalPrice: string | null;
-  typicalDetail?: string;
-  priceBand: string | null;
-  dom: string | null;
-  soldToAsk: string | null;
-  active: string | null;
+  /** active listings of this type, as a count */
+  active: string;
+  /** "avg asking $1.2M": the mean asking price of those listings */
   activeDetail?: string;
-  /** null when k<5 or fewer than 3 quarters. */
-  chart: { headline: string; note: string; trendLabel: string; data: ChartPoint[] } | null;
-  /** true at 0 < sales < 5 — surfaces the "contact the team" prompt, chart hidden. */
-  contactTeamPrompt: boolean;
-  /** closed sales of this type in the window: what a silent cell says it has (MA-001 defect 24) */
-  sampleCount: number;
-}
-
-// ───── At-a-glance (12 tiles) ────────────────────────────────────────────────
-
-export interface GlanceTile {
-  label: string;
-  /** null => silent ("under publish threshold"). Pre-formatted string when publishable. */
-  value: string | null;
-  detail?: string;
-  silentNote?: string;
-}
-
-// ───── Market activity ───────────────────────────────────────────────────────
-
-export interface MarketStat {
-  label: string;
-  value: string | null; // null => silent "—"
-}
-
-export interface MarketSummaryCard {
-  title: string;
-  body: string;
-  stats: MarketStat[];
-}
-
-export interface RentByBedTile {
-  label: string;
-  value: string | null; // null => silent
-  detail?: string;
-}
-
-export interface MarketBlock {
-  sales: MarketSummaryCard;
-  leases: MarketSummaryCard | null;
-  /** null => suppressed (k<5): a quarterly line would expose individual prices. */
-  priceChart: { data: ChartPoint[]; caption: string } | null;
-  /** the last four quarters against the four before, where both clear the floor (change 10) */
-  yoy: string | null;
-  rentByBeds: RentByBedTile[] | null;
 }
 
 // Sold records are rendered by a self-contained client island (StreetSoldRecords)
@@ -273,13 +202,9 @@ export interface StreetV2Data {
   /** true => no generated prose; render the "profile in preparation" placeholder. */
   placeholder: boolean;
   sections: StreetProseSection[]; // empty when placeholder
-  /** owner inline-CTA stat figure; null => no publishable typical, so the inline CTA is hidden. */
-  ownerCtaPrice: number | null;
 
   sidebar: StreetSidebar;
   productTypes: TypeBlock[];
-  glance: GlanceTile[]; // exactly 12
-  market: MarketBlock;
   commute: CommuteCategory[];
   activeListings: ListingCard[];
   /** The Town's civic addresses on this street, or null where it carries none. */
@@ -288,21 +213,13 @@ export interface StreetV2Data {
   faqs: StreetFaq[];
   finalCtas: { seller: StreetCta; buyer: StreetCta };
 
-  /** DEC-CONDO-6 street port. areaContext = the street's neighbourhood typical price
-   *  (hub-identical, k-anon), the anchor for sub-k5 pages. tier drives how prominent it
-   *  is + the identity-only floor copy. */
+  /** The street's neighbourhood from the registry, for the CTAs' wording. Registry data only:
+   *  the neighbourhood typical and its sample left with MC-046, and the sold-derived tier and
+   *  hasAnySale with them. */
   areaContext: {
     neighbourhoodName: string;
     neighbourhoodSlug: string | null;
-    typicalPrice: number | null;
-    /** the hub's window + sample-count disclosure, shown under the number.
-     *  null when the typical itself is suppressed — nothing published, nothing to disclose. */
-    basis: string | null;
   } | null;
-  tier: 'priced-sale' | 'priced-lease' | 'area-only' | 'identity-only';
-  /** TRUE when the street has >=1 resale in the licensed window. Gates the dormant CTA copy so
-   *  "No resales recorded yet" renders ONLY where there are genuinely zero sales. */
-  hasAnySale: boolean;
 
   /** Street-video PoC: resolved day/night clips, or null when the street carries no clip.
    *  A null value (and a null clip within it) renders nothing. See src/lib/streetVideo.ts. */

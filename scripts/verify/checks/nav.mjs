@@ -56,17 +56,28 @@ const MENU_INDEX = { buy: '/listings', rent: '/rentals', streets: '/streets', se
 /** The rail, as the brief states it. Open houses are absent on purpose: see megaLive.ts. */
 const ITEMS = {
   buy: ['new', 'changes', 'condos', 'freehold', 'alerts'],
-  rent: ['now', 'hoods', 'typical', 'new', 'landlord'],
+  // MC-046 (R8): Typical rent left the Rent rail, Sold this month and Market watch the Sell rail.
+  rent: ['now', 'hoods', 'new', 'landlord'],
   streets: ['search', 'hoods', 'video', 'az'],
-  sell: ['worth', 'soldmtd', 'watch'],
+  sell: ['worth'],
 };
-/** The phone accordions must carry every <dl class="m-mega-figs"> figure the desktop band
- *  does: Sell's three, Rent's typical rents (one per home type, a whole-home and a basement-unit
- *  figure where a house type's basement leases clear the floor, so the number follows the data)
- *  and three landlord proof points. The band is in the DOM at every width, so it is the count
- *  to match. */
+/** NO FIGURES BLOCK (MC-046 R8). The <dl class="m-mega-figs"> blocks carried Sell's three
+ *  Board figures, Rent's typical rents and the landlord's lease figures, all VOW-derived. The
+ *  band and the phone accordions must now carry none, which is asserted rather than assumed. */
 /** What counts as live content inside an item's panel. A CTA alone does not. */
-const LIVE_BLOCK = '[data-fig], .m-mega-cards a, .m-mega-hubs a, .m-mega-frames a, .m-mega-az a, .m-mega-edition, .m-mega-strip a, .m-mega-figs dd, form.m-mega-search';
+const LIVE_BLOCK = '[data-fig], .m-mega-cards a, .m-mega-hubs a, .m-mega-frames a, .m-mega-az a, .m-mega-strip a, form.m-mega-search';
+/** THE MENU CARRIES NO VOW-DERIVED VALUE (MC-046 Stage 1, R8, R9). The figure keys, blocks and
+ *  wording that left, each a finding if served in the nav on any page. */
+const VOW_FIG = /^menu-(sell-.*|sold-.*|mw-.*|buy-changes|rent-(leased|days|lta)|rent-(detached|semi|townhouse|condo)(-whole|-basement)?)$/;
+const VOW_NAV = [
+  [/class="m-mega-figs"/, 'a figures block'],
+  [/class="m-mega-edition"/, 'a Market Watch edition'],
+  [/href="\/market-watch/, 'a Market Watch link'],
+  [/id="m-item-(sell-soldmtd|sell-watch|rent-typical)"/, 'a removed rail item'],
+  [/Busiest streets|Most sales/, 'a strip ranked by sales'],
+  [/class="m-mega-stripnote">\d[\d,]* sold</, 'a strip note counting sales'],
+  [/Typical rent|Typically \$|Sold to ask|Days to sell|Leased to ask|Days to lease/, 'a sold or leased statistic label'],
+];
 const TYPE_FLOOR_PX = 14;
 /** The fixed bar's height; the phone panel sits under it. */
 const BAR_PX = 66;
@@ -125,21 +136,13 @@ function figures(html) {
 }
 
 const INT = /^[\d,]{1,7}$/;
-const MONEY = /^(\$\d{1,3}(,\d{3})+|—)$/;
-const DAYS = /^(\d{1,3} days?|—)$/;
-const PCT = /^(\d{2,3}\.\d%|—)$/;
-/** A monthly rent in whole dollars, the suppression glyph, or the words the k-gate leaves. */
-const RENT = /^(\$\d{1,3}(,\d{3})*\/mo|—|Sample too small)$/;
-/** A typical rent by home type: the type alone, or the type with its unit class where the
- *  house type's leases were split (MH-007 addendum). */
-const RENT_TYPICAL_FIG = /^menu-rent-(detached|semi|townhouse|condo)(-whole|-basement)?$/;
 /** Every menu figure's stated format. A `menu-` figure with no entry here is a finding: a
- *  figure nobody declared a format for is a figure nobody is checking. */
+ *  figure nobody declared a format for is a figure nobody is checking. The sold, leased and
+ *  price-change figures left with MC-046 and have no entry: one served is a finding twice. */
 const FIG_FORMAT = {
   'menu-buy-active': INT,
   'menu-buy-new': INT,
   'menu-buy-new24': INT,
-  'menu-buy-changes': INT,
   'menu-buy-condos': INT,
   'menu-buy-freehold': INT,
   'menu-rent-now': INT,
@@ -147,22 +150,10 @@ const FIG_FORMAT = {
   'menu-rent-hubs': INT,
   'menu-rent-hub': INT,
   'menu-rent-week': INT,
-  'menu-rent-leased': INT,
-  'menu-rent-days': DAYS,
-  'menu-rent-lta': PCT,
   'menu-streets-pages': INT,
   'menu-streets-filmed': INT,
   'menu-streets-hubs': INT,
   'menu-hub-active': INT,
-  'menu-sell-typical': MONEY,
-  'menu-sell-days': DAYS,
-  'menu-sell-sta': PCT,
-  'menu-sell-days-lead': DAYS,
-  'menu-sell-sta-lead': PCT,
-  'menu-sold-mtd': INT,
-  'menu-sold-mtd-typical': MONEY,
-  'menu-mw-sales': INT,
-  'menu-mw-new': INT,
 };
 
 // ── the browser half ─────────────────────────────────────────────────────────────────────
@@ -631,7 +622,7 @@ async function driveMobile(page, url, w, h, findings) {
   if (acc.cards === 0) findings.push(`${tag}: phone Buy accordion has no listing cards`);
   if (acc.cardImgs === 0) findings.push(`${tag}: phone Buy accordion has no photographs`);
   if (acc.hubs === 0) findings.push(`${tag}: phone Streets accordion lists no neighbourhoods`);
-  if (acc.bandFigs < 9) findings.push(`${tag}: the desktop band carries ${acc.bandFigs} figures, expected Sell's 3, at least 4 typical rents and 3 landlord proof points`);
+  if (acc.bandFigs !== 0) findings.push(`${tag}: the desktop band carries ${acc.bandFigs} figures-block figures, expected none (MC-046 R8)`);
   if (acc.figs !== acc.bandFigs) findings.push(`${tag}: phone accordions carry ${acc.figs} figures, the desktop band ${acc.bandFigs}`);
   if (acc.ctas < MENUS.length) findings.push(`${tag}: ${acc.ctas} CTAs across the phone accordions, expected ${MENUS.length}`);
   if (acc.strips < MENUS.length) findings.push(`${tag}: ${acc.strips} strips across the phone accordions, expected ${MENUS.length}`);
@@ -712,7 +703,7 @@ export default {
     const read = [];
     const nonButton = [], badAria = [], missingPanel = [], notHidden = [], noCta = [], noStrip = [], sameStrip = [];
     const badFig = [], hubMiss = [], redirectLinks = [], deadLinks = [], railBad = [], emptyItems = [];
-    const chrome = [], contextBad = [], subMiss = [], rentBad = [];
+    const chrome = [], contextBad = [], subMiss = [], rentBad = [], vowBad = [];
     const allHrefs = new Set();
     const hubSlug = hubRecord.publishedSlugs[0];
     for (const path of pages) {
@@ -743,7 +734,7 @@ export default {
       const stripLabels = [...nav.matchAll(/<div class="m-mega-strip"><span class="m-mega-label">([^<]+)</g)].map((m) => m[1]);
       if (path.startsWith('/streets/')) {
         if (!barCta.startsWith('/sell?street=')) contextBad.push(`${path}: bar CTA is ${barCta || 'absent'}, expected /sell?street=`);
-        if (!stripLabels.some((l) => /^(Streets that meet|Most sales in) /.test(l))) contextBad.push(`${path}: no strip names the street's neighbours or its hub (${stripLabels.join(' | ')})`);
+        if (!stripLabels.some((l) => /^(Streets that meet|For sale now in) /.test(l))) contextBad.push(`${path}: no strip names the street's neighbours or its hub (${stripLabels.join(' | ')})`);
       } else if (path.startsWith('/neighbourhoods/')) {
         if (barCta !== `/value/${hubSlug}`) contextBad.push(`${path}: bar CTA is ${barCta || 'absent'}, expected /value/${hubSlug}`);
         if (!stripLabels.some((l) => l.startsWith('Streets in '))) contextBad.push(`${path}: no strip is the hub's streets (${stripLabels.join(' | ')})`);
@@ -759,8 +750,8 @@ export default {
         if (!/aria-expanded="false"/.test(t[0]) || !/aria-controls="m-mega-(buy|rent|streets|sell)"/.test(t[0])) badAria.push(`${path}: ${t[0].slice(0, 80)}`);
       }
       // THE RENT MENU (MH-007): every published hub as a scoped /rentals link with its count,
-      // the four typical rents, the landlord form as the panel's CTA, and Rentals gone from
-      // the Buy rail. On a hub or a street page, "available now" is the hub's own count and
+      // the landlord form as the panel's CTA, and Rentals gone from the Buy rail. The four
+      // typical rents left with MC-046 (R8); the VOW check below asserts their absence. On a hub or a street page, "available now" is the hub's own count and
       // its CTA the hub's own scoped page.
       const rentPanel = panelMarkup(nav, 'rent');
       if (rentPanel) {
@@ -768,12 +759,6 @@ export default {
         if (new Set(rentHubs).size !== hubCount) rentBad.push(`${path}: Rent lists ${new Set(rentHubs).size} hubs as scoped /rentals, expected ${hubCount}`);
         const rentHubFigs = figures(rentPanel.body).filter((f) => f.fig === 'menu-rent-hub').length;
         if (rentHubFigs !== hubCount) rentBad.push(`${path}: ${rentHubFigs} hub rent counts, expected ${hubCount}`);
-        for (const key of ['detached', 'semi', 'townhouse', 'condo']) if (!new RegExp(`data-fig="menu-rent-${key}(-whole)?"`).test(rentPanel.body)) rentBad.push(`${path}: no typical rent for ${key}`);
-        // a split type states both figures under labels that say which unit each is
-        for (const m of rentPanel.body.matchAll(/data-fig="menu-rent-(detached|semi|townhouse|condo)-basement"/g)) {
-          if (!rentPanel.body.includes(`data-fig="menu-rent-${m[1]}-whole"`)) rentBad.push(`${path}: ${m[1]} has a basement-unit figure but no whole-home figure`);
-        }
-        if (/<dt>(Detached|Semi-detached|Townhouse)<\/dt>\s*<dd data-fig="menu-rent-[a-z]+-whole"/.test(rentPanel.body)) rentBad.push(`${path}: a whole-home figure is not labelled as one`);
         if (!/<form\b[^>]*class="m-mega-search m-mega-brief"[\s\S]*?<button\b[^>]*class="m-mega-cta"/.test(rentPanel.body.slice(rentPanel.body.indexOf('id="m-item-rent-landlord"')))) rentBad.push(`${path}: the landlord panel does not end in its form's submit`);
         const nowCta = (rentPanel.body.slice(rentPanel.body.indexOf('id="m-item-rent-now"')).match(/<a\b[^>]*class="[^"]*m-mega-cta[^"]*"[^>]*href="([^"]+)"/) || [])[1] || '';
         if (path.startsWith('/neighbourhoods/') || path.startsWith('/streets/')) {
@@ -800,7 +785,7 @@ export default {
           const from = m.index;
           const to = p.body.indexOf('m-mega-cta', from);
           const body = to === -1 ? '' : p.body.slice(from, to);
-          const live = /data-fig=|m-mega-cards|m-mega-hubs|m-mega-frames|m-mega-az"|m-mega-edition|m-mega-strip|m-mega-figs|m-mega-search/.test(body);
+          const live = /data-fig=|m-mega-cards|m-mega-hubs|m-mega-frames|m-mega-az"|m-mega-strip|m-mega-search/.test(body);
           if (!live) emptyItems.push(`${path}: ${key}/${item}`);
           if (to === -1) emptyItems.push(`${path}: ${key}/${item} has no CTA`);
         }
@@ -818,9 +803,17 @@ export default {
       }
       if (stripSets.length === MENUS.length && new Set(stripSets).size !== stripSets.length) sameStrip.push(path);
       const figs = figures(nav);
+      // MC-046: no VOW-derived figure, block, link or wording, and the neutral line in the Sell
+      // panel (the band's copy and the phone accordion's, one visible at a width), nowhere else.
+      for (const f of figs) if (VOW_FIG.test(f.fig)) vowBad.push(`${path}: ${f.fig}="${f.text}"`);
+      for (const [re, what] of VOW_NAV) if (re.test(nav)) vowBad.push(`${path}: ${what}`);
+      const sellPanel = panelMarkup(nav, 'sell');
+      const lines = (nav.match(/data-sold-history-line/g) || []).length;
+      const sellLines = sellPanel ? (sellPanel.body.match(/data-sold-history-line/g) || []).length : 0;
+      if (sellLines !== 1 || lines > 2) vowBad.push(`${path}: the neutral line is served ${lines} times in the nav, ${sellLines} in the desktop Sell panel, expected 1 there and at most 2 in all`);
       for (const f of figs) {
         if (!f.fig.startsWith('menu-')) continue;
-        const fmt = FIG_FORMAT[f.fig] ?? (RENT_TYPICAL_FIG.test(f.fig) ? RENT : undefined);
+        const fmt = FIG_FORMAT[f.fig];
         if (!fmt) { badFig.push(`${path}: ${f.fig} has no stated format`); continue; }
         if (!fmt.test(f.text)) badFig.push(`${path}: ${f.fig} "${f.text}"`);
         if (f.value !== null && f.value !== f.text) badFig.push(`${path}: ${f.fig} text "${f.text}" != data-value "${f.value}"`);
@@ -901,11 +894,12 @@ export default {
         ['served chrome lacks the label, the skip link, the bar search form, the <details> menu or its compact menu', chrome.length, 0],
         ['pages whose CTA or strips do not follow the street or the hub', contextBad.length, 0],
         ['pages whose rail tabs lack sub-labels', subMiss.length, 0],
-        ['Rent menu: every hub as scoped /rentals with its count, four typical rents, the landlord form, Rentals out of Buy', rentBad.length, 0],
+        ['Rent menu: every hub as scoped /rentals with its count, the landlord form, Rentals out of Buy', rentBad.length, 0],
+        ['VOW-derived figures, blocks, links or wording in the nav, or the neutral line misplaced (MC-046)', vowBad.length, 0],
         ['browser runs completed', runs, expectedRuns],
         ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, bar search, CTA contrast, no-JS)', findings.length, 0],
       ],
-      examples: [...chrome, ...contextBad, ...subMiss, ...rentBad,
+      examples: [...vowBad, ...chrome, ...contextBad, ...subMiss, ...rentBad,
         ...nonButton, ...badAria, ...missingPanel, ...notHidden, ...noCta, ...noStrip,
         ...sameStrip.map((p) => `identical strips on ${p}`),
         ...railBad, ...emptyItems, ...badFig, ...hubMiss, ...redirectLinks, ...deadLinks, ...findings,

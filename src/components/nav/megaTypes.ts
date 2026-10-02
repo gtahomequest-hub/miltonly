@@ -7,16 +7,20 @@
 // item's content is one `MegaItemContent`, a bag of optional blocks that one renderer knows
 // how to draw. A block that is absent is not drawn; a block that is present is live.
 //
-// TWO CONTRACTS.
+// THREE CONTRACTS.
 //
-// 1. EVERY FIGURE IS A DISPLAY STRING, FORMATTED ON THE SERVER, by src/lib/figureFormat.ts,
-//    the same helpers the Board uses. The menu once formatted raw numbers itself and shipped
-//    "$937,465.504", "27.829694323144103" and a ratio wearing a percent sign. The renderer
-//    cannot format, so it cannot misformat.
+// 1. EVERY FIGURE IS A DISPLAY STRING, FORMATTED ON THE SERVER, by src/lib/figureFormat.ts.
+//    The menu once formatted raw numbers itself and shipped "$937,465.504",
+//    "27.829694323144103" and a ratio wearing a percent sign. The renderer cannot format, so
+//    it cannot misformat.
 //
 // 2. EVERY BLOCK IS OPTIONAL. The nav renders on every page of the site. A page that passes
 //    nothing renders the rails, each item's static blurb and its CTA, which is still a
 //    complete, crawlable menu. A panel is never padded with a placeholder.
+//
+// 3. PUBLIC ROWS ONLY (MC-046 Stage 1, PropTx VOW Best Practices item 40). Every value in
+//    this shape is a link, an active listing's card or a count of active listings. Nothing
+//    derived from a sold, leased, expired or terminated record, or from price history.
 
 /** Four menus (MH-007 added Rent). The order the bar shows them in is the nav's MENUS. */
 export type MenuKey = 'buy' | 'rent' | 'streets' | 'sell';
@@ -58,17 +62,8 @@ export interface MegaListing {
   hub: string | null;
 }
 
-export interface MegaFigure {
-  key: string;
-  label: string;
-  value: string;
-  /** the window this figure was measured over; each figure states its own */
-  window: string;
-  /** the sample behind it, formatted, e.g. "412 sales"; empty when not applicable */
-  sample: string;
-}
-
-/** A row of street links, sourced from one real query, each with the count that ranked it. */
+/** A row of street links, sourced from one public query, each with the count that ranked it
+ *  (an empty note where the count is 0). Never a sold count (MC-046 R9). */
 export interface MegaStrip {
   label: string;
   items: { slug: string; name: string; note: string }[];
@@ -98,24 +93,16 @@ export interface MegaLetter {
   href: string | null;
 }
 
-/** The latest published Market Watch edition, as far as the menu states it. */
-export interface MegaEdition {
-  weekOf: string;
-  label: string;
-  /** the edition's own deterministic summary sentence */
-  summary: string;
-  href: string;
-}
-
 export interface MegaItemContent {
   /** the rail item's sub-label, one live fact under its name ("20 this week") */
   sub?: string;
   /** the item's CTA text with its count in it ("See all 460 for sale"); the ItemDef's static text otherwise */
   cta?: string;
   lead?: LeadSegment[];
-  figures?: MegaFigure[];
-  /** one sentence under the figures stating how they were measured, where two bases share a panel */
-  basis?: string;
+  // NO FIGURES BLOCK, NO BASIS, NO EDITION (MC-046 Stage 1, R8). They carried the Board's
+  // sold statistics, typical rents from closed leases, the landlord's lease figures and the
+  // Market Watch summary. This object is serialized into the client nav on every page, so
+  // the shape itself no longer has a place for them.
   cards?: MegaListing[];
   hubs?: MegaHub[];
   /** the hubs block's heading and figure key; "Neighbourhoods, with homes listed now" and
@@ -124,7 +111,6 @@ export interface MegaItemContent {
   hubsFig?: string;
   videos?: MegaVideo[];
   letters?: MegaLetter[];
-  edition?: MegaEdition;
   strip?: MegaStrip;
   /** one line of stated, true copy under the live blocks */
   note?: string;

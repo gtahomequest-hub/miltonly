@@ -5,9 +5,13 @@
 // street (944), but a bare/dormant entity (0 sold, 0 listings, unpublished) would
 // render a 404 at /streets/[slug]. So entities are surfaced in hero search,
 // autocomplete, and hub street lists ONLY when they render a real page:
-//   recencyWeightedSold > 0   (has sold history — the ~500 that render today)
-//   OR a PUBLISHED StreetContent row  (a page was deliberately published — e.g.
+//   a PUBLISHED StreetContent row  (a page was deliberately published — e.g.
 //                              the minimal-template new-construction pages)
+//   OR a public listing on the street (an active sale or an available lease)
+//
+// MC-046 (PropTx VOW Best Practices item 40): "has sold history" (recencyWeightedSold > 0) was
+// the first clause. It surfaced a street because homes sold on it, which discloses VOW data by
+// presence alone, and since Stage 1 a street with sold records only has no page to link to.
 //
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // WHY THE SECOND CLAUSE IS A QUERY AND NO LONGER A COLUMN
@@ -40,6 +44,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { revalidateTag } from "next/cache";
 import { dataCached } from "@/lib/dataCache";
+import { PUBLIC_LISTING_WHERE } from "@/lib/listings/vow";
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // THE TWO SLUG SETS LEAVE NEON ONCE PER DEPLOYMENT PER HOUR, NOT ONCE PER RENDER (MC-018).
@@ -66,7 +71,7 @@ import { dataCached } from "@/lib/dataCache";
 // within SURFACE_TTL. revalidateTag needs a request scope; outside one (a script running
 // generateStreet directly) it is skipped, as revalidatePath is there.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-export const SURFACE_KEYS = { published: "surface:published-slugs:v1", entities: "surface:entity-slugs:v1" } as const;
+export const SURFACE_KEYS = { published: "surface:published-slugs:v1", entities: "surface:entity-slugs:v1", listed: "surface:listed-slugs:v1" } as const;
 export const SURFACE_TAG = "surface";
 export const SURFACE_TTL = 3600;
 
@@ -102,6 +107,22 @@ export const publishedStreetSlugs = perRequest(
       return rows.map((r) => r.streetSlug);
     },
     [SURFACE_KEYS.published],
+    { revalidate: SURFACE_TTL, tags: [SURFACE_TAG] },
+  ),
+);
+
+/** Slugs carrying a public listing (PUBLIC_LISTING_WHERE): an active sale or an available lease. */
+export const publicListingStreetSlugs = perRequest(
+  dataCached(
+    async (): Promise<string[]> => {
+      const rows = await prisma.listing.findMany({
+        where: PUBLIC_LISTING_WHERE,
+        distinct: ["streetSlug"],
+        select: { streetSlug: true },
+      });
+      return rows.map((r) => r.streetSlug).filter((x): x is string => !!x);
+    },
+    [SURFACE_KEYS.listed],
     { revalidate: SURFACE_TTL, tags: [SURFACE_TAG] },
   ),
 );
@@ -156,10 +177,10 @@ export async function publishedStreetPageCount(): Promise<number> {
  * outside the OR rather than inside it.
  */
 export async function surfacedStreetWhere(): Promise<Prisma.ResidentialStreetWhereInput> {
-  const published = await publishedStreetSlugs();
+  const [published, listed] = await Promise.all([publishedStreetSlugs(), publicListingStreetSlugs()]);
   return {
     isResidential: true,
-    OR: [{ recencyWeightedSold: { gt: 0 } }, { slug: { in: published } }],
+    slug: { in: Array.from(new Set([...published, ...listed])) },
   };
 }
 

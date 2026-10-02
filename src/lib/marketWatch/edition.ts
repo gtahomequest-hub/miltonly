@@ -250,11 +250,11 @@ export async function buildEdition(weekOf?: string): Promise<BuiltEdition | null
     ...streets.map((s) => s.name),
   ];
 
+  // THE STORED HEAD IS FIGURE-FREE (MC-046 Stage 1, R4). It carried the weekly sold count and the
+  // typical, both derived from VOW records. The pages no longer read it, and a new edition stores
+  // none either.
   const metaTitle = `${CITY} Market Watch, ${window.label}`;
-  const metaDescription =
-    sales.typicalPrice !== null
-      ? `${sales.count} homes sold in ${CITY} in the ${window.label}, at a typical price of ${formatMoney(sales.typicalPrice)}. Weekly sales, new listings and activity by neighbourhood.`
-      : `${sales.count} homes sold in ${CITY} in the ${window.label}. Weekly sales, new listings and activity by neighbourhood.`;
+  const metaDescription = `${CITY} Market Watch for the ${window.label}. Sold history is for registered readers; ${CITY} homes for sale and for lease are open to everyone.`;
 
   return {
     weekOf: window.weekOf,

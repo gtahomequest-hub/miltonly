@@ -99,7 +99,8 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
               </tr>
             ) : (
               rows.map((r) => (
-                <tr key={r.mls_number}>
+                // MC-046: a served sold record carries the marker; only a reader past the gate gets one.
+                <tr key={r.mls_number} data-vow="">
                   <td>{r.sold_date.slice(0, 10)}</td>
                   <td>{r.address}</td>
                   <td>{r.beds ?? '—'}</td>

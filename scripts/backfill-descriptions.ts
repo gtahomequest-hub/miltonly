@@ -220,7 +220,7 @@ function log(event: string, payload: Record<string, unknown>): void {
 
 async function loadCandidateUniverse(): Promise<string[]> {
   const { prisma } = await import("@/lib/prisma");
-  const { getAnalyticsDb, getSoldDb } = await import("@/lib/db");
+  const { getAnalyticsDb, getSoldDb } = await import("./lib/vow-db");
   const analyticsDb = getAnalyticsDb();
   const soldDb = getSoldDb();
 
@@ -280,6 +280,12 @@ async function loadCandidateUniverse(): Promise<string[]> {
 // Re-exported here for backward compatibility with any caller still
 // importing from this file path.
 import { isMalformedSlug } from "@/lib/slugMalformedDetection";
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 export { isMalformedSlug };
 
 // ─── Identity-keyed dedupe (Step 13m-2) ─────────────────────────────────────
@@ -297,7 +303,7 @@ export { isMalformedSlug };
 // systematically picked empty slugs as canonical on all 277 inverted groups.
 
 async function fetchSlugTxCounts(slugs: string[]): Promise<Map<string, number>> {
-  const { getSoldDb } = await import("@/lib/db");
+  const { getSoldDb } = await import("./lib/vow-db");
   const soldDb = getSoldDb();
   const counts = new Map<string, number>();
   if (!soldDb || slugs.length === 0) return counts;

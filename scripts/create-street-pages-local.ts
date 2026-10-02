@@ -37,6 +37,12 @@
 //   npx tsx --tsconfig tsconfig.test.json scripts/create-street-pages-local.ts
 import { readFileSync, appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 
 function loadEnvLocal(): void {
   for (const line of readFileSync(".env.local", "utf-8").split("\n")) {

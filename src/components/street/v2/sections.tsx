@@ -1,84 +1,47 @@
 // src/components/street/v2/sections.tsx
-// Presentational sections for the forest-v2 street shell. Every suppressible
-// surface renders the .s-silent state when its value is null — never a number.
+// Presentational sections for the forest-v2 street shell.
+//
+// THE VISITOR VIEW (MC-046 Stage 1, PropTx VOW Best Practices item 40). Nothing rendered here is
+// derived from a sold, leased, expired or terminated record: the hero's typical and its pills,
+// the glance grid, the sidebar's market facts, the owner CTA's figure, the type cards' sold rows,
+// the market cards, the rent grid, the quarterly chart and the area-context block all left. The
+// sold view for the street is the gated island (StreetSoldRecords, id="sold-records"), and the
+// hero carries the one neutral line that points at it (SoldHistoryLine).
 import type {
   StreetV2Data,
   StreetStat,
-  ProductPill,
   TypeBlock,
-  GlanceTile,
-  MarketSummaryCard,
   ListingCard,
-  ChartPoint,
 } from './types';
 import type { StreetVideoClip } from '@/lib/streetVideo';
-import { compactPrice, fullPrice, shortPrice, dollars, barFraction } from './format';
+import { shortPrice } from './format';
 import { CommuteIcon } from './icons';
 import Image from 'next/image';
 import { StreetSoldRecords } from './SoldRecordsIsland';
 import StreetAlertCTA from './StreetAlertCTA';
 import StreetCapture from './StreetCapture';
 import ListingBrokerage from '@/components/listings/ListingBrokerage';
+import SoldHistoryLine from '@/components/vow/SoldHistoryLine';
 
 /** Every link to /sell from a street page carries the street (MA-001 defect 4): the valuation
  *  form prefills its address from ?street=, and four of the five links dropped it. */
 export const sellHrefFor = (streetName: string) => `/sell?street=${encodeURIComponent(streetName)}#valuation`;
-import { resaleClaim } from './resaleClaim';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
-import { K_ANON_PRICE, K_ANON_RANGE } from '@/lib/kAnon';
-
-const DEFAULT_SILENT = 'sample too small to publish';
 
 /* ───── hero ───── */
 
+// IDX tiles only (MC-046): the active count and the housing mix of the live listings. A tile
+// with no value is not rendered: there is no silent state left, because nothing here is
+// suppressible.
 function HeroStat({ stat }: { stat: StreetStat }) {
-  const isSilent =
-    stat.kind === 'text' ? stat.textValue == null : stat.value == null;
-  if (isSilent) {
-    return (
-      <div className="s-hs">
-        <div className="s-n s-silent">{stat.silentNote ?? DEFAULT_SILENT}</div>
-        <div className="s-l">{stat.label}</div>
-      </div>
-    );
-  }
+  const shown = stat.kind === 'text' ? stat.textValue : stat.value;
+  if (shown == null || shown === '') return null;
   return (
     <div className="s-hs">
-      <div className="s-n">
-        {stat.kind === 'price' && (
-          <>
-            <b>$</b>
-            {compactPrice(stat.value as number)}
-          </>
-        )}
-        {stat.kind === 'count' && <>{stat.value}</>}
-        {stat.kind === 'text' && <>{stat.textValue}</>}
-      </div>
+      <div className="s-n">{shown}</div>
       <div className="s-l">{stat.label}</div>
       {stat.sub && <div className="s-sub">{stat.sub}</div>}
-      {stat.basis && <div className="s-basis">{stat.basis}</div>}
     </div>
-  );
-}
-
-function Pill({ p }: { p: ProductPill }) {
-  const silent = p.typicalPrice === null;
-  const body = (
-    <>
-      <span className="s-pill-t">{p.displayName}</span>
-      <span className="s-pill-c">{p.count}</span>
-      <span className={`s-pill-p${silent ? ' s-silent' : ''}`}>
-        {silent ? p.priceLabel : `${dollars(p.typicalPrice as number)} ${p.priceLabel}`}
-      </span>
-    </>
-  );
-  // a pill with nowhere to land is a statement, not a link (MA-001 defect 8)
-  return p.anchor ? (
-    <a className="s-pill" href={p.anchor}>
-      {body}
-    </a>
-  ) : (
-    <span className="s-pill s-pill-static">{body}</span>
   );
 }
 
@@ -102,9 +65,11 @@ function ItalicLastWord({ name }: { name: string }) {
   );
 }
 
-export function StreetHero({ data, soldGate = true }: { data: StreetV2Data; soldGate?: boolean }) {
-  const closedSales = data.hero.salePills.reduce((n, p) => n + p.count, 0);
-  const soldGateLine = soldGate && closedSales > 0 ? { count: closedSales } : null;
+/** Where the hero's neutral line points: the page's own sold-records island when it renders
+ *  one, otherwise sign-in with a return to this page. */
+export type SoldLineTarget = { soldViewHref: string } | { returnPath: string };
+
+export function StreetHero({ data, soldLine }: { data: StreetV2Data; soldLine: SoldLineTarget }) {
   return (
     <header className="s-hero">
       <div className="s-wrap">
@@ -125,40 +90,11 @@ export function StreetHero({ data, soldGate = true }: { data: StreetV2Data; sold
             <HeroStat key={s.label} stat={s} />
           ))}
         </div>
-        {data.hero.salePills.length > 0 && (
-          <div className="s-pillrow">
-            <span className="s-pillrow-l">
-              <span className="s-dot" />
-              Recent sales <span className="s-pillrow-win">· last 12 months</span>
-            </span>
-            {data.hero.salePills.map((p) => (
-              <Pill key={p.type} p={p} />
-            ))}
-          </div>
-        )}
-        {data.hero.leasePills.length > 0 && (
-          <div className="s-pillrow">
-            <span className="s-pillrow-l">
-              <span className="s-dot s-dot-blue" />
-              Recent leases{data.hero.leaseWindowNote && <span className="s-pillrow-win"> · {data.hero.leaseWindowNote}</span>}
-            </span>
-            {data.hero.leasePills.map((p) => (
-              <Pill key={`lease-${p.type}`} p={p} />
-            ))}
-          </div>
-        )}
-        {/* THE SOLD RECORD, SOLD FROM THE TOP (MA-001 change 5): the gate sat at screen 4 to 9
-            with no mention above it. One line in the hero, anchored to the table, whenever the
-            page has a closed sale to show and a table to show it in. The count is the 12-month
-            figure; the table it lands on is the last 90 days, so the call to action promises
-            the recent ones and not every one (MC-036, item 10). */}
-        {soldGateLine && (
-          <a className="s-hero-gate" href="#sold-records">
-            <span className="s-hero-gate-n">{soldGateLine.count}</span> closed {soldGateLine.count === 1 ? 'sale' : 'sales'} in the last 12 months.
-            <span className="s-hero-gate-cta">Sign in free for the recent ones →</span>
-          </a>
-        )}
-        <p className="s-updated">Updated {formatUpdated(data.lastUpdated)}. Sales and leases from the Board&rsquo;s closed records; listings live.</p>
+        {/* THE NEUTRAL LINE (MC-046 Stage 1), where the sale and lease pills and the "N closed
+            sales in the last 12 months" gate line stood. Once per page, here and nowhere else.
+            It carries no figure, no count and no status. */}
+        <SoldHistoryLine subject={data.name} tone="dark" className="s-hero-sold" {...soldLine} />
+        <p className="s-updated">Updated {formatUpdated(data.lastUpdated)}. Listings live.</p>
         {/* the one field on the first screen: valuation or watch, the street prefilled */}
         <StreetCapture
           streetName={data.name}
@@ -222,41 +158,13 @@ export function StreetVideo({ data }: { data: StreetV2Data }) {
   );
 }
 
-/* ───── at-a-glance ───── */
-
-export function StreetGlance({ data }: { data: StreetV2Data }) {
-  return (
-    <div className="s-glance">
-      <div className="s-wrap">
-        <div className="s-card">
-          {data.glance.map((t: GlanceTile) => {
-            const silent = t.value === null;
-            return (
-              <div className="s-gi" key={t.label}>
-                <div className="s-gi-l">{t.label}</div>
-                <div className={`s-gi-v${silent ? ' s-silent' : ''}`}>
-                  {silent ? t.silentNote ?? 'under publish threshold' : t.value}
-                </div>
-                {t.detail && <div className="s-gi-d">{t.detail}</div>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ───── prose body + sidebar ───── */
 
 function Sidebar({ data }: { data: StreetV2Data }) {
   const { sidebar } = data;
-  // The sidebar seller CTA was the last ungated copy on the page: "grounded in every sale we have
-  // tracked on X" rendered on 412 of 431 pages, contradicted the tiered CTA below it on 191, and
-  // was flatly false on 26 streets with no resale on record. Same predicate as everything else.
-  const claim = resaleClaim(data.name, data.hasAnySale);
-  const subK5 = data.tier === 'identity-only' || data.tier === 'area-only';
-  const ctaBody = subK5 || claim.claimsAbsence ? claim.sellerBody(data.name) : sidebar.cta.body;
+  // One seller body for every street (MC-046, R10). It used to switch on the sold record between
+  // "grounded in every sale we have tracked", "Few recent sales" and "No resale on record": three
+  // claims about the record, each a disclosure of which kind of street this is.
   return (
     <aside className="s-side">
       {sidebar.facts.length > 0 && (
@@ -272,7 +180,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
       )}
       {/* QUEUE item 5. The street's physical facts, from the Town centreline and OSM, each one
           the layer's value formatted and nothing else. A card of its own so a road fact never
-          sits among the market facts above, and the attribution is on the card that makes the
+          sits among the street facts above, and the attribution is on the card that makes the
           claim. The battery's geometry-facts check reads these rows by data-key. */}
       {sidebar.geometry && (
         <div className="s-side-card s-geo" data-identity={sidebar.geometry.identity}>
@@ -312,7 +220,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
       <div className="s-side-cta">
         <span className="s-eyebrow">{sidebar.cta.eyebrow}</span>
         <h3>{sidebar.cta.headline}</h3>
-        <p>{ctaBody}</p>
+        <p>{sidebar.cta.body}</p>
         <a className="s-b1" href={sidebar.cta.actionHref === '/sell' ? sellHrefFor(data.name) : sidebar.cta.actionHref}>
           {sidebar.cta.actionLabel}
         </a>
@@ -336,13 +244,12 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
         </div>
         <div className="s-desc-grid">
           <div className="s-prose">
-            {data.placeholder ? (
+            {data.placeholder || data.sections.length === 0 ? (
               <div className="s-placeholder">
                 <h3>No written profile yet</h3>
                 <p>
-                  The figures on this page are live from the Board and the Town. A written read
-                  of {data.name} follows once the street has enough sales to describe without
-                  identifying a home.
+                  A written read of {data.name} is in preparation. The listings, the addresses and
+                  the Town&rsquo;s facts on this page are live.
                 </p>
               </div>
             ) : (
@@ -352,12 +259,11 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
                   {sec.paragraphs.map((p, j) => (
                     <p key={j}>{p}</p>
                   ))}
-                  {/* owner inline CTA after the first section, only when a typical price publishes */}
-                  {i === 0 && data.ownerCtaPrice !== null && (
+                  {/* The owner inline CTA after the first section. It quoted the street typical
+                      ("Typical is $X"); the figure left with MC-046 and the offer stays. */}
+                  {i === 0 && (
                     <div className="s-inline-cta">
-                      <div className="s-inline-h">
-                        Own on {data.name}? Typical is <b>{shortPrice(data.ownerCtaPrice)}</b>.
-                      </div>
+                      <div className="s-inline-h">Own on {data.name}?</div>
                       <a href={sellHrefFor(data.name)}>Value my home</a>
                     </div>
                   )}
@@ -374,88 +280,23 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
 
 /* ───── per-type sections ───── */
 
-// BARS WITH VALUES AND AN AXIS (MH-005, MA-001 change 10). The figure lived in a title
-// attribute, which does not exist on touch, so eight near-identical bars read as decoration.
-// Each bar carries its typical and its count; the axis states the floor and the ceiling of the
-// scale, so the bars' heights mean something. The scale starts at zero: a bar's height is its
-// price, not its distance from the cheapest quarter.
-function MiniBars({ data }: { data: ChartPoint[] }) {
-  const max = Math.max(...data.map((d) => d.value), 0);
-  return (
-    <div className="s-chartbox">
-      <div className="s-axis" aria-hidden="true">
-        <span>{shortPrice(max)}</span>
-        <span>{shortPrice(max / 2)}</span>
-        <span>$0</span>
-      </div>
-      <div className="s-bars" role="img" aria-label={`Quarterly typical sold price: ${data.map((d) => `${d.quarter} ${fullPrice(Math.round(d.value))} over ${d.count} sales`).join('; ')}`}>
-        {data.map((d) => (
-          <div className="s-bar" key={d.quarter}>
-            <div className="s-bar-v">{shortPrice(d.value)}</div>
-            <div className="s-bar-fill" style={{ height: `${barFraction(d.value, max) * 100}%` }} />
-            <div className="s-bar-q">{d.quarter}</div>
-            <div className="s-bar-n">{d.count} sold</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TypeStatCell({
-  label,
-  value,
-  detail,
-  silentNote,
-}: {
-  label: string;
-  value: string | null;
-  detail?: string;
-  silentNote?: string;
-}) {
-  const silent = value === null;
-  return (
-    <div className="s-stat">
-      <div className="s-stat-l">{label}</div>
-      <div className={`s-stat-v${silent ? ' s-silent' : ''}`}>{silent ? silentNote ?? '—' : value}</div>
-      {detail && <div className="s-stat-d">{detail}</div>}
-    </div>
-  );
-}
-
-function TypeCard({ t, streetName }: { t: TypeBlock; streetName: string }) {
+// A CARD PER TYPE LISTED NOW (MC-046). The sold rows (typical, band, time on market, sold to
+// ask, "has seen N closed sales", the quarterly chart and its trend) left the visitor view. The
+// card states the active count and the mean asking price of those listings, labelled asking.
+function TypeCard({ t }: { t: TypeBlock }) {
   return (
     <div className="s-type" id={`type-${t.type}`}>
       <div className="s-type-head">
         <h3>{t.displayName}</h3>
       </div>
       <p className="s-type-intro">{t.intro}</p>
-      {/* A silent cell says what would end the silence (MA-001 defect 24): the floor and the
-          sample, in words, instead of a dash. */}
       <div className="s-type-stats">
-        <TypeStatCell label="Typical price" value={t.typicalPrice} detail={t.typicalDetail} silentNote={`needs ${K_ANON_PRICE} sales, has ${t.sampleCount}`} />
-        <TypeStatCell label="Price band" value={t.priceBand} silentNote={`needs ${K_ANON_RANGE} sales, has ${t.sampleCount}`} />
-        <TypeStatCell label="Time on market" value={t.dom} silentNote={`needs ${K_ANON_PRICE} sales, has ${t.sampleCount}`} />
-        <TypeStatCell label="Sold to ask" value={t.soldToAsk} silentNote={`needs ${K_ANON_PRICE} sales, has ${t.sampleCount}`} />
-        {t.active !== null && <TypeStatCell label="Active listings" value={t.active} detail={t.activeDetail} />}
+        <div className="s-stat">
+          <div className="s-stat-l">Active listings</div>
+          <div className="s-stat-v">{t.active}</div>
+          {t.activeDetail && <div className="s-stat-d">{t.activeDetail}</div>}
+        </div>
       </div>
-      {t.contactTeamPrompt && (
-        <div className="s-contact-prompt">
-          Too few recent {t.displayName.toLowerCase()} sales on record to publish a typical price without identifying a
-          home.{' '}
-          <a href={sellHrefFor(streetName)}>Ask Aamir for a private read →</a>
-        </div>
-      )}
-      {t.chart && (
-        <div className="s-chart">
-          <div className="s-chart-head">
-            <span className="s-chart-h">{t.chart.headline}</span>
-            <span className="s-chart-trend">{t.chart.trendLabel}</span>
-          </div>
-          <div className="s-chart-note">{t.chart.note}</div>
-          <MiniBars data={t.chart.data} />
-        </div>
-      )}
     </div>
   );
 }
@@ -467,11 +308,11 @@ export function StreetTypes({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">By the home</span>
-          <h2>What trades on {data.name}, by type</h2>
+          <h2>Listed on {data.name} now, by type</h2>
         </div>
         <div className="s-types">
           {data.productTypes.map((t) => (
-            <TypeCard key={t.type} t={t} streetName={data.name} />
+            <TypeCard key={t.type} t={t} />
           ))}
         </div>
       </div>
@@ -479,65 +320,20 @@ export function StreetTypes({ data }: { data: StreetV2Data }) {
   );
 }
 
-/* ───── market activity + gated sold records ───── */
+/* ───── the gated sold records ───── */
 
-function SummaryCard({ card, id }: { card: MarketSummaryCard; id?: string }) {
-  return (
-    <div className="s-msum" id={id}>
-      <h3>{card.title}</h3>
-      <p>{card.body}</p>
-      <div className="s-msum-stats">
-        {card.stats.map((st) => {
-          const silent = st.value === null;
-          return (
-            <div className="s-stat" key={st.label} style={{ padding: 0 }}>
-              <div className="s-stat-l">{st.label}</div>
-              <div className={`s-stat-v${silent ? ' s-silent' : ''}`}>{silent ? '—' : st.value}</div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export function StreetMarket({ data }: { data: StreetV2Data }) {
-  const m = data.market;
+// THE PORTAL'S SOLD VIEW FOR THE STREET. The Sales and Leases cards, the rent grid, the
+// quarterly chart and the year-on-year sentence that shared this section left with MC-046; the
+// island stays exactly as it was: it reads /api/streets/<slug>/sold-records per session and
+// shows the records only to a verified, acknowledged reader. The hero's neutral line links here.
+export function StreetSoldHistory({ data }: { data: StreetV2Data }) {
   return (
     <section className="s-block">
       <div className="s-wrap">
         <div className="s-sechead">
-          <span className="s-eyebrow">The market</span>
-          <h2>Recent activity on {data.name}</h2>
+          <span className="s-eyebrow">Records</span>
+          <h2>Sales records, {data.name}</h2>
         </div>
-        <div className="s-market-grid">
-          <SummaryCard card={m.sales} />
-          {m.leases && <SummaryCard card={m.leases} id="leases" />}
-        </div>
-        {m.rentByBeds && (
-          <div className="s-rentgrid">
-            {m.rentByBeds.map((r) => {
-              const silent = r.value === null;
-              return (
-                <div className="s-rent" key={r.label}>
-                  <div className="s-rent-l">{r.label}</div>
-                  <div className={`s-rent-v${silent ? ' s-silent' : ''}`}>{silent ? '—' : r.value}</div>
-                  {r.detail && <div className="s-gi-d">{r.detail}</div>}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        {m.priceChart && (
-          <div className="s-market-chart">
-            <div className="s-chart-head">
-              <span className="s-chart-h">Quarterly sold price · all types</span>
-            </div>
-            <MiniBars data={m.priceChart.data} />
-            <div className="s-chart-cap">{m.priceChart.caption}</div>
-            {m.yoy && <p className="s-yoy">{m.yoy}</p>}
-          </div>
-        )}
         <StreetSoldRecords slug={data.slug} streetName={data.name} />
       </div>
     </section>
@@ -682,7 +478,7 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
                 <a className="s-ctx-item" href={`/streets/${s.slug}`} key={s.slug}>
                   <div className="s-ctx-n">{s.name}</div>
                   <div className="s-ctx-m">
-                    {s.count} active · avg {shortPrice(s.avgPrice)}
+                    {s.count} active · avg asking {shortPrice(s.avgPrice)}
                   </div>
                 </a>
               ))}
@@ -747,18 +543,12 @@ export function StreetFaq({ data }: { data: StreetV2Data }) {
 export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
   const { seller, buyer } = data.finalCtas;
   // The buyer "Set an alert" button used to link to /listings and capture nothing (a
-  // dead button). It is now StreetAlertCTA → the live lead pipeline. For dormant streets
-  // the copy leads with the honest "no resales yet" framing (the loop this closes: when a
-  // dormant street records its first sale, auto-promotion publishes it and the alert fires).
+  // dead button). It is StreetAlertCTA → the live lead pipeline.
+  // ONE WORDING FOR EVERY STREET (MC-046, R10). The copy used to switch on the sold record
+  // (resaleClaim): "No resales recorded on X yet", "Too few recent sales on X", "Be first when X
+  // trades". Each was an existence claim about the sold record, and the switch itself disclosed
+  // which kind of street this is. The seller and buyer copy is the same everywhere now.
   const nbhd = data.areaContext?.neighbourhoodName ?? data.neighbourhoods[0] ?? 'Milton';
-  const subK5 = data.tier === 'identity-only' || data.tier === 'area-only';
-  // ONE gate, ONE wording — shared with the minimal shell via resaleClaim().
-  const claim = resaleClaim(data.name, data.hasAnySale);
-  // The absence claim is gated on hasAnySale ALONE, not on tier. A street can clear k>=5 on LEASES
-  // and still have no resale on record (tier 'priced-lease'); those pages previously said nothing
-  // at all, so the claim set and the zero-sale set disagreed in both directions.
-  const alertFraming = subK5 || claim.claimsAbsence;
-  const ctaBody = alertFraming ? claim.ctaBody : buyer.body;
   return (
     <section className="s-block">
       <div className="s-wrap">
@@ -769,10 +559,7 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
           <div className="s-finalgrid" style={{ marginTop: 24 }}>
             <div className="s-fcard">
               <h3>{seller.headline}</h3>
-              {/* The stock seller copy promises "grounded in every sale we have tracked" — on a
-                  street the page is simultaneously arguing has too few sales to price, that reads
-                  as boilerplate written for rich streets. Same population gate as the buyer copy. */}
-              <p>{alertFraming ? claim.sellerBody(data.name) : seller.body}</p>
+              <p>{seller.body}</p>
               <a className="s-b1" href={seller.actionHref === '/sell' ? sellHrefFor(data.name) : seller.actionHref}>
                 {seller.actionLabel} →
               </a>
@@ -781,65 +568,11 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
               streetName={data.name}
               shortName={data.name}
               neighbourhood={nbhd}
-              headline={alertFraming ? `Be first when ${data.name} trades` : buyer.headline}
-              body={ctaBody}
-              dormant={alertFraming}
+              headline={buyer.headline}
+              body={buyer.body}
+              dormant={false}
             />
           </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ───── area-context anchor (DEC-CONDO-6 street port) ───── */
-// Renders ONLY for sub-k5 pages (tier !== 'priced-sale') — rich pages stay byte-identical.
-// The neighbourhood typical is the hub's own figure (drift-free) and is labelled
-// strictly area-grain. Two distinct copies, mirroring the condo tier: identity-only leans
-// entirely on the area ("too few to price it on its own yet"); area/lease pages state the
-// suppression ("we won't publish a price the record can't support").
-export function StreetAreaContext({ data }: { data: StreetV2Data }) {
-  if (data.tier === 'priced-sale') return null;
-  const ac = data.areaContext;
-  const identity = data.tier === 'identity-only';
-  // TIER decides which framing this block uses; hasAnySale decides what the heading may CLAIM.
-  // Keyed on tier alone, "New to the record" shipped on 113 pages, 90 of which had sales.
-  const claim = resaleClaim(data.name, data.hasAnySale);
-  return (
-    <section className="s-block s-areacx">
-      <div className="s-wrap">
-        <div className="s-sechead">
-          <span className="s-eyebrow">{identity ? claim.areaEyebrow : 'Neighbourhood context'}</span>
-          <h2>{identity ? claim.areaHeading : `The market around ${data.name}`}</h2>
-        </div>
-        <div className="s-areacx-card">
-          {ac && ac.typicalPrice != null ? (
-            <>
-              <div className="s-areacx-num">
-                <b>$</b>
-                {compactPrice(ac.typicalPrice)}
-              </div>
-              <div className="s-areacx-lbl">
-                the typical home price across{' '}
-                {ac.neighbourhoodSlug ? (
-                  <a href={`/neighbourhoods/${ac.neighbourhoodSlug}`}>{ac.neighbourhoodName}</a>
-                ) : (
-                  ac.neighbourhoodName
-                )}{' '}
-               , the neighbourhood, not {data.name} specifically
-              </div>
-              {ac.basis && <div className="s-basis">{ac.basis}</div>}
-              <p className="s-areacx-read">
-                {identity
-                  ? `Too few recent trades on ${data.name} to price it on its own yet, the ${ac.neighbourhoodName} market is your best guide to what you'd pay here, and this page fills in with ${data.name}'s own numbers as homes trade.`
-                  : `${data.name} hasn't had enough recent sales to publish its own typical price, and we won't publish a price the record can't support. The ${ac.neighbourhoodName} typical above is the honest anchor until it does.`}
-              </p>
-            </>
-          ) : (
-            <p className="s-areacx-read">
-              Neighbourhood pricing for {ac?.neighbourhoodName ?? 'this area'} isn&rsquo;t published yet, {data.name} will fill in with its own price history as homes trade.
-            </p>
-          )}
         </div>
       </div>
     </section>

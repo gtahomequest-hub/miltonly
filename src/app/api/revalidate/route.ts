@@ -1,5 +1,5 @@
 import { revalidatePath, revalidateTag } from "next/cache";
-import { DB_CACHE_TAG } from "@/lib/db";
+import { DB_CACHE_TAG } from "@/lib/vow/cacheTags";
 import { dropSurfaceCache } from "@/lib/streetSurface";
 import { dropHubSetCache } from "@/lib/hubSets";
 import { LISTING_ROWS_TAG } from "@/lib/revalidateSurfaces";

@@ -48,7 +48,7 @@ const iso = (d: Date | null): string | null => (d ? new Date(d).toISOString() : 
 const day = (d: Date | string | null): string => (d ? new Date(d).toISOString().slice(0, 10) : "null");
 
 (async () => {
-  const { getSoldDb } = await import("@/lib/db");
+  const { getSoldDb } = await import("./lib/vow-db");
   const { resolveSoldDate } = await import("@/lib/vow-sync");
   const sd = getSoldDb();
   if (!sd) { console.error("SOLD_DATABASE_URL is not configured"); process.exit(1); }

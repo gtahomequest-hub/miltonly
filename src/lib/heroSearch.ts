@@ -26,6 +26,7 @@
 import { prisma } from "@/lib/prisma";
 import { surfacedStreetWhere } from "@/lib/streetSurface";
 import { townAddressesForSlug } from "@/lib/town/addresses";
+import { publishedCondoSlugs } from "@/lib/condoSurface";
 
 const DROP = new Set(["milton", "on", "ont", "ontario", "canada", "ca"]);
 
@@ -108,9 +109,11 @@ async function getIndex(): Promise<Index> {
   if (_cache && Date.now() - _cacheAt < TTL_MS) return _cache;
   const [streets, condos, neighbourhoods] = await Promise.all([
     // Surfaced entities only — dormant/pageless registry entities never resolve
-    // (they would 404). See streetSurface.ts.
-    prisma.residentialStreet.findMany({ where: await surfacedStreetWhere(), select: { slug: true }, orderBy: { soldCount12mo: "desc" } }),
-    prisma.condoBuilding.findMany({ select: { slug: true } }),
+    // (they would 404). See streetSurface.ts. The order does not reach the result
+    // (buildKeyMap drops every ambiguous key), so it is alphabetical rather than by
+    // 12-month sales: nothing here reads a sold-derived column (MC-046 R9).
+    prisma.residentialStreet.findMany({ where: await surfacedStreetWhere(), select: { slug: true }, orderBy: { slug: "asc" } }),
+    prisma.condoBuilding.findMany({ where: { slug: { in: await publishedCondoSlugs() } }, select: { slug: true } }), // MC-046: published pages only
     prisma.neighbourhood.findMany({ select: { slug: true } }),
   ]);
   _cache = {

@@ -9,29 +9,27 @@
 // data; a future /value/[neighbourhood]/[street] resolves street-grain data
 // and renders the SAME shell + SAME form — swap the data fetch, not the UI.
 //
-// data === null  -> the sub-k / no-hub number-free editorial variant
-// (nullStats discipline, same as the /potl tenure hub): NEVER a fabricated
-// median, never $0/NaN. data present -> the grounded live-numbers block.
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40). The page used to open on "N homes sold
+// in the last 12 months, typical sold price ~$X, median days on market D", all derived from
+// VOW records, and its thin-pool variant on "homes here don't change hands often", a claim
+// derived from the same records. Every figure is gone and there is one figure-free lede for
+// every location; the sold block's place carries the neutral line. The route is noindex, follow.
 
 import { Suspense } from "react";
 import SiteNav from "@/components/nav/SiteNav";
 import type { MegaLive } from "@/components/nav/megaTypes";
 import HomeValuationCard from "@/components/landing/HomeValuationCard";
 import SiteFooter from "@/components/nav/SiteFooter";
-import { fullPrice } from "@/components/hub/format";
+import SoldHistoryLine from "@/components/vow/SoldHistoryLine";
 import { config } from "@/lib/config";
 
-export interface ValueData {
-  typicalPrice: number; // k-anon-cleared typical sold $ (never null here)
-  sold12mo: number; // 12-mo sold count (> 0 here)
-  dom: number | null; // avg days on market (getHubData.stats.dom)
-}
-
 export interface ValueLandingProps {
-  /** Display name of the location (neighbourhood now; street later). */
+  /** Display name of the location (neighbourhood now; street later). The registry name. */
   locationName: string;
-  /** Grounded live-data packet, or null for the sub-k/no-hub variant. */
-  data: ValueData | null;
+  /** The portal's sold view for the location, for the neutral line (e.g. /sold?nbhd=<slug>). */
+  soldViewHref?: string;
+  /** This page's own path, the sign-in return when there is no sold view. */
+  returnPath: string;
   /** the menu's live content, read by the server page; absent renders the rails */
   live?: MegaLive;
 }
@@ -39,16 +37,13 @@ export interface ValueLandingProps {
 const FIRST_NAME = config.realtor.name.split(" ")[0];
 const WHATSAPP_URL = `https://wa.me/${config.realtor.phoneE164.replace("+", "")}`;
 
-export default function ValueLanding({ locationName, data, live }: ValueLandingProps) {
-  // Live-data sentence (grounded) vs number-free editorial (sub-k/no-hub).
-  // Built as JS strings (not JSX text) so apostrophes need no escaping.
-  const domFragment = data && data.dom != null ? ` — median days on market ${data.dom}` : "";
-  const freeData = data
-    ? `Here's what's happening in ${locationName} right now: ${data.sold12mo} homes sold in the last 12 months — typical sold price ~${fullPrice(data.typicalPrice)}${domFragment}. Prices move street by street, and your home's exact value depends on its type, size, and condition — but this is the real local baseline, not a national estimate.`
-    : `${locationName} is one of Milton's smaller, tightly-held pockets — homes here don't change hands often, which makes public averages misleading. That's exactly why a real, address-specific read matters more here than anywhere: a handful of sales can't tell you what your home is worth, but 15 years of selling across Milton can.`;
+export default function ValueLanding({ locationName, soldViewHref, returnPath, live }: ValueLandingProps) {
+  // One figure-free lede for every location. Built as JS strings (not JSX text) so apostrophes
+  // need no escaping.
+  const lede = `Every home in ${locationName} is its own case: the street, the type, the size, the lot and the condition all count. A written, address-specific valuation from someone who sells here reads all of that; a national estimate reads none of it.`;
 
-  const ask = `Want your home's specific value? Enter your address and I'll send you a personal valuation — grounded in ${locationName} sold data, not an algorithm's guess.`;
-  const trust = `Aamir Yaqoob — RE/MAX Hall of Fame — 15+ years in Milton — $57M+ in local sales, 235+ families helped. Your valuation comes from someone who actually sells in ${locationName}, not a call centre.`;
+  const ask = `Want your home's specific value? Enter your address and I'll send you a personal valuation, prepared by hand for your address, not an algorithm's guess.`;
+  const trust = `Aamir Yaqoob, RE/MAX Hall of Fame, 15+ years in Milton, $57M+ in local sales, 235+ families helped. Your valuation comes from someone who actually sells in ${locationName}, not a call centre.`;
 
   return (
     <div className="sell-v2">
@@ -62,8 +57,9 @@ export default function ValueLanding({ locationName, data, live }: ValueLandingP
             See Your Home&apos;s <em>Value</em>
           </h1>
 
-          {/* FREE DATA (grounded) or NUMBER-FREE editorial (sub-k) — no gate. */}
-          <p className="s-lede">{freeData}</p>
+          {/* MC-046: figure-free for every location; the neutral line where the sold block was. */}
+          <p className="s-lede">{lede}</p>
+          <SoldHistoryLine subject={locationName} soldViewHref={soldViewHref} returnPath={returnPath} tone="dark" className="mb-5" />
 
           {/* The ask — both variants. */}
           <p className="v-ask">{ask}</p>

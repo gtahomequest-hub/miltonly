@@ -25,6 +25,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { redis } from "@/lib/cache";
 import { getSession, touchSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { vowReaderAccess } from "@/lib/vow/door";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { enforceVowThrottle } from "@/lib/vow/throttle";
 import {
@@ -133,6 +134,8 @@ export async function GET(req: NextRequest) {
   // includes list_office_name per VOW 6.3(c) and redacts address when
   // display_address=false).
   try {
+    // MC-046: the records are read through the door, against this reader's access.
+    const access = vowReaderAccess(user)!;
     let rows: SoldListItem[];
 
     if (type === "all") {
@@ -140,19 +143,19 @@ export async function GET(req: NextRequest) {
       // cap), merge, sort by sold_date DESC, slice to the requested limit.
       const [saleRows, leaseRows] = await Promise.all([
         street
-          ? getStreetSoldList(street, "sale", days, limit)
-          : getNeighbourhoodSoldList(neighbourhood!, "sale", days, limit),
+          ? getStreetSoldList(access, street, "sale", days, limit)
+          : getNeighbourhoodSoldList(access, neighbourhood!, "sale", days, limit),
         street
-          ? getStreetSoldList(street, "lease", days, limit)
-          : getNeighbourhoodSoldList(neighbourhood!, "lease", days, limit),
+          ? getStreetSoldList(access, street, "lease", days, limit)
+          : getNeighbourhoodSoldList(access, neighbourhood!, "lease", days, limit),
       ]);
       rows = [...saleRows, ...leaseRows]
         .sort((a, b) => b.sold_date.localeCompare(a.sold_date))
         .slice(0, limit);
     } else {
       rows = street
-        ? await getStreetSoldList(street, type, days, limit)
-        : await getNeighbourhoodSoldList(neighbourhood!, type, days, limit);
+        ? await getStreetSoldList(access, street, type, days, limit)
+        : await getNeighbourhoodSoldList(access, neighbourhood!, type, days, limit);
     }
 
     // The audit trail (MP-006): one row per gated read, before the records go out.

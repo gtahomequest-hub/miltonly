@@ -4,7 +4,8 @@
 // of side effects, so which emails a lead triggered depended on which form they happened to
 // find. Phase 2 folded in the last sixteen surfaces, and with them the fields that had kept
 // them out: qualification answers, a CASL consent snapshot, a free-text message, a valuation
-// address, and the market-pulse aggregate packet that has to come back in the response.
+// address. (The market-pulse aggregate packet the response used to carry left at MC-046 Stage 1,
+// R15: it was DB3 sold aggregates, VOW-derived, returned to an anonymous submitter.)
 //
 // Order is load-bearing:
 //   1. guards      — honeypot, origin, user agent, rate limit. Nothing is written for a
@@ -21,7 +22,7 @@
 // without it would have removed that redundancy exactly where it was bought.
 //
 // EVERYTHING THAT WRITES OR SENDS IS A DEPENDENCY (ML-005). The row, the watch, the four
-// senders, the CAPI event, the delivery log and the market-pulse read arrive through
+// senders, the CAPI event and the delivery log arrive through
 // `IngestDeps`, live by default. scripts/test-lead-bot-gate.ts calls this function with every
 // one of them replaced by a counter, runs a hundred bot submissions through it, and fails the
 // build if a single one reaches a write or a send. That is the door's pattern
@@ -48,7 +49,6 @@ import {
 import { sendKvcoreParserEmail } from "@/lib/notifications/kvcore";
 import { notifyAamirBySMS } from "@/lib/sms";
 import { sendCapiEvent, hashUserData } from "@/lib/meta-capi";
-import { getMarketPulse } from "@/lib/market-pulse";
 import type { Prisma } from "@prisma/client";
 
 export interface LeadBody {
@@ -101,8 +101,6 @@ export interface LeadBody {
   [k: string]: unknown;
 }
 
-type MarketPulsePacket = Awaited<ReturnType<typeof getMarketPulse>>;
-
 /** The headers the path reads. A NextRequest satisfies it; so does a test's plain object. */
 export type IngestRequest = { headers: Pick<Headers, "get"> };
 
@@ -117,7 +115,6 @@ export interface IngestDeps {
   crmEmail: typeof sendKvcoreParserEmail;
   capi: typeof sendCapiEvent;
   deliveries: typeof recordDeliveries;
-  marketPulse: typeof getMarketPulse;
 }
 
 export const LIVE_DEPS: IngestDeps = {
@@ -130,7 +127,6 @@ export const LIVE_DEPS: IngestDeps = {
   crmEmail: sendKvcoreParserEmail,
   capi: sendCapiEvent,
   deliveries: recordDeliveries,
-  marketPulse: getMarketPulse,
 };
 
 export interface IngestResult {
@@ -139,9 +135,6 @@ export interface IngestResult {
   leadId?: string;
   env?: LeadEnv;
   error?: string;
-  /** The market-pulse reveal. Returned in every environment, because the surface cannot
-   *  render without it: unlike `diagnostics`, it is the product, not a proof. */
-  stats?: MarketPulsePacket | null;
   /** Present only in non-production, so a preview proof can show what fired. */
   diagnostics?: {
     confirmationEmailId: string | null;
@@ -152,9 +145,6 @@ export interface IngestResult {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/** The one source whose reveal is computed server-side and returned to the page. */
-const MARKET_PULSE_SOURCE = "sales-ads-market-pulse-unlock";
 
 function clientIp(req: IngestRequest): string {
   const fwd = req.headers.get("x-forwarded-for");
@@ -359,23 +349,6 @@ export async function ingestLead(body: LeadBody, req: IngestRequest, deps: Inges
       )
     : Promise.resolve<Delivery>({ kind: "confirmation", outcome: "skipped", resendId: null });
 
-  // The market-pulse reveal. Computed from the consented criteria snapshot, k-anonymity
-  // enforced inside getMarketPulse, and awaited because the page cannot render without it.
-  // A compute failure returns null stats and the surface falls back to "report by email".
-  const statsPromise: Promise<MarketPulsePacket | null> =
-    source === MARKET_PULSE_SOURCE && matchCriteria
-      ? (async () => {
-          const mc = matchCriteria as { propertyType?: string; neighbourhood?: string };
-          if (!mc.propertyType || !mc.neighbourhood) return null;
-          try {
-            return await deps.marketPulse({ propertyType: mc.propertyType, neighbourhood: mc.neighbourhood });
-          } catch (err) {
-            console.error("[lead/ingest] market pulse compute failed", { leadId, err });
-            return null;
-          }
-        })()
-      : Promise.resolve(null);
-
   const watch = await watchPromise;
 
   const notifyFields = {
@@ -447,7 +420,7 @@ export async function ingestLead(body: LeadBody, req: IngestRequest, deps: Inges
       }).catch(() => ({ ok: false }))
     : Promise.resolve({ ok: false });
 
-  const [confirmation, alert, stats] = await Promise.all([confirmPromise, alertPromise, statsPromise]);
+  const [confirmation, alert] = await Promise.all([confirmPromise, alertPromise]);
   await Promise.all([crmPromise, capiPromise, smsPromise, deps.deliveries(leadId, [confirmation, alert])]);
   const confirmationEmailId = confirmation.resendId;
   const opsAlertId = alert.resendId;
@@ -459,7 +432,6 @@ export async function ingestLead(body: LeadBody, req: IngestRequest, deps: Inges
     status: 200,
     leadId,
     env,
-    ...(stats !== null ? { stats } : {}),
     ...(isCountable(env) ? {} : { diagnostics: { confirmationEmailId, opsAlertId, watch, value } }),
   };
 }

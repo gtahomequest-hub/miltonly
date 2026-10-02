@@ -26,24 +26,16 @@ import { config } from "@/lib/config";
 import type { GuideFaq, GuideSection, GuideTeaser } from "@/components/guides/types";
 import type { GroundedFigures } from "@/lib/content/groundedFigures";
 import {
-  getSoldFigures,
   getActiveCondoFees,
   getActiveSupply,
   getSchoolRows,
-  minimumDownPayment,
   BOC_POLICY_RATE,
   fig,
   type CondoFeeRow,
   type SchoolRow,
 } from "./figures";
 import { policyRateLabel } from "@/data/policyRate";
-import {
-  monthlyPayment,
-  ontarioLTT,
-  cmhcPremium,
-  stressTestRate,
-  formatMoney,
-} from "@/lib/mortgage-math";
+import { stressTestRate, formatMoney } from "@/lib/mortgage-math";
 
 import { GUIDES_UPDATED, CTA_BUYER, CTA_SELLER, readMinutes, type GuideDef, type BuiltGuide } from "./shared";
 import { buildParking } from "./parking";
@@ -73,12 +65,15 @@ export const GUIDE_DEFS: GuideDef[] = [
   {
     slug: "what-milton-neighbourhoods-cost",
     title: `What each ${CITY} neighbourhood costs`,
-    dek: `Typical sold prices by neighbourhood and by housing form, drawn from the same figures each neighbourhood page shows.`,
+    dek: `${CITY}'s neighbourhoods, one by one, for registered readers.`,
     category: "buying",
     categoryLabel: "Buying",
     gscQuery: "milton real estate market",
     metaTitle: `What Each ${CITY} Neighbourhood Costs`,
-    metaDescription: `Typical sold prices across ${CITY} by neighbourhood and housing form, over the trailing 12 months, with the sample size behind every figure.`,
+    metaDescription: `What homes sell for in each ${CITY} neighbourhood is sold history, for registered readers. ${CITY} homes for sale and for lease are open to everyone.`,
+    // MC-046 Stage 1 (R6): every section was a sold statistic, so none survives the removal.
+    noindex: true,
+    soldHistoryLine: true,
   },
   {
     slug: "how-to-read-a-milton-sold-price",
@@ -89,16 +84,20 @@ export const GUIDE_DEFS: GuideDef[] = [
     gscQuery: "sold prices milton",
     metaTitle: `How to Read a ${CITY} Sold Price`,
     metaDescription: `What a typical sold price does and does not tell you in ${CITY}, how a middle-half band is built, and why some figures are withheld.`,
+    soldHistoryLine: true,
   },
   {
     slug: "is-it-a-good-time-to-sell-in-milton",
     title: `Is it a good time to sell in ${CITY}?`,
-    dek: `What the last four quarters, the current supply and the sold-to-ask figure actually show, with no forecast attached.`,
+    dek: `What the current supply shows, what days on market and sold-to-ask describe, and why no forecast is attached.`,
     category: "selling",
     categoryLabel: "Selling",
     gscQuery: "is it a good time to sell",
     metaTitle: `Is It a Good Time to Sell in ${CITY}?`,
-    metaDescription: `The trailing quarters, days on market, sold-to-ask and live supply in ${CITY}, stated as a record of what has happened rather than a prediction.`,
+    metaDescription: `Live supply in ${CITY}, what days on market and sold-to-ask describe, and why this page records rather than predicts.`,
+    // MC-046 Stage 1 (R6): "The last four quarters" was sold figures only and left whole.
+    noindex: true,
+    soldHistoryLine: true,
   },
   {
     slug: "milton-condo-fees-parking-and-lockers",
@@ -113,12 +112,12 @@ export const GUIDE_DEFS: GuideDef[] = [
   {
     slug: "what-it-costs-to-buy-your-first-home-in-milton",
     title: `What it costs to buy your first home in ${CITY}`,
-    dek: `Down payment, land transfer tax, mortgage insurance and the stress test, worked against ${CITY} prices.`,
+    dek: `Down payment, land transfer tax, mortgage insurance and the stress test, explained for a first home in ${CITY}.`,
     category: "buying",
     categoryLabel: "Buying",
     gscQuery: "first-time buyer",
     metaTitle: `What It Costs to Buy Your First Home in ${CITY}`,
-    metaDescription: `Minimum down payment, Ontario land transfer tax, CMHC premium and the stress test, worked against typical ${CITY} sold prices.`,
+    metaDescription: `Minimum down payment, Ontario land transfer tax, CMHC premium and the stress test, explained for a first home in ${CITY}.`,
   },
   {
     slug: "milton-schools-what-the-data-shows",
@@ -153,6 +152,8 @@ export const GUIDE_DEFS: GuideDef[] = [
 ];
 
 export const GUIDE_SLUGS = GUIDE_DEFS.map((g) => g.slug);
+/** The guides that stay indexed after MC-046 Stage 1; the sitemap lists these only. */
+export const INDEXED_GUIDE_SLUGS = GUIDE_DEFS.filter((g) => !g.noindex).map((g) => g.slug);
 
 // ── builders ──────────────────────────────────────────────────────────────
 
@@ -168,87 +169,17 @@ function teaserFor(def: GuideDef, minutes: number): GuideTeaser {
   };
 }
 
-const money = (n: number | null): string | null => (n === null ? null : formatMoney(n));
 
 // ── G1 · what each neighbourhood costs ────────────────────────────────────
+//
+// MC-046 Stage 1 (R6). Every section, takeaway and FAQ answer here was a sold statistic (the
+// town-wide typical and band, the per-neighbourhood typicals and counts, the by-form typicals) or
+// a sentence that only explained one. All of it was derived from VOW records, so none of it
+// renders. The page is the heading, the neutral line and the links out; it is noindex.
 
 async function buildNeighbourhoodCosts(def: GuideDef): Promise<BuiltGuide> {
-  const { data, bundle } = await getSoldFigures();
-  const o = data.overall;
-  const priced = data.byNeighbourhood.filter((n) => n.typicalPrice !== null);
-  const suppressed = data.byNeighbourhood.filter((n) => n.typicalPrice === null);
-  const forms = data.byType.filter((t) => t.medianPrice !== null);
-
-  const sections: GuideSection[] = [
-    {
-      heading: "The town-wide figure first",
-      paragraphs: paras(
-        para(
-          sentence(o.count, `${CITY} recorded ${o.count} sales over the trailing 12 months.`),
-          sentence(o.medianPrice, `The typical sold price across all of them was ${money(o.medianPrice)}.`),
-          sentence(
-            o.bandLow !== null && o.bandHigh !== null ? true : null,
-            `The middle half of those sales landed between ${money(o.bandLow)} and ${money(o.bandHigh)}, which is a more useful shape than a single number because it shows how wide the market actually is.`,
-          ),
-        ),
-        para(
-          `A town-wide figure is the wrong tool for a specific question. ${CITY} covers everything from a condo apartment to a rural acreage, and one typical price averages across all of it.`,
-          `The neighbourhood table below is the level most buyers actually shop at.`,
-        ),
-      ),
-      tip: `Every figure on this page covers completed sales over the trailing 12 months, and stops at today. Listings currently for sale are a different question and live on the listings pages.`,
-    },
-    {
-      heading: "By neighbourhood",
-      paragraphs: paras(
-        para(
-          sentence(priced.length, `${priced.length} ${CITY} neighbourhoods have enough recorded sales over the last year to publish a typical price.`),
-          sentence(
-            suppressed.length ? true : null,
-            `${suppressed.length} do not, and are listed with their sale count only.`,
-          ),
-          `A figure withheld is withheld because too few homes sold there for a price to describe a market rather than a handful of houses.`,
-        ),
-        para(
-          `Each neighbourhood name links to its own page, where the same figure is computed the same way. The two will not disagree.`,
-        ),
-      ),
-      tip: null,
-    },
-    {
-      heading: "By housing form",
-      paragraphs: paras(
-        para(
-          sentence(forms.length, `Across ${CITY}, ${forms.length} of the four housing forms have enough sales over the year to carry a typical price.`),
-          ...forms.map((t) => `${t.label}: ${money(t.medianPrice)} across ${t.count} sales.`),
-        ),
-        para(
-          `Form explains more of the spread than neighbourhood does. A detached house and a condo apartment in the same postal code are not competing for the same buyer, and averaging them together produces a number that describes neither.`,
-        ),
-      ),
-      tip: null,
-    },
-  ];
-
-  const faqs: GuideFaq[] = [
-    {
-      question: `Which ${CITY} neighbourhood is cheapest?`,
-      answer: priced.length
-        ? `Over the trailing 12 months the lowest published typical price belongs to ${
-            [...priced].sort((a, b) => (a.typicalPrice as number) - (b.typicalPrice as number))[0].name
-          }, at ${money([...priced].sort((a, b) => (a.typicalPrice as number) - (b.typicalPrice as number))[0].typicalPrice)}. That reflects the mix of homes that happened to sell there, not a judgement about the area.`
-        : `Not enough neighbourhoods have published figures over the trailing 12 months to answer that.`,
-    },
-    {
-      question: "Why does a neighbourhood show a sale count but no price?",
-      answer: `Because fewer than five homes sold there in the window. A typical price computed on one, two or three sales describes those specific houses rather than a market, so it is withheld. The count is shown because a count on its own identifies nobody.`,
-    },
-    {
-      question: "Is this the asking price or the sold price?",
-      answer: `Sold. Every figure here comes from completed transactions. Asking prices are on the listings pages and are a different measure entirely.`,
-    },
-  ];
-
+  const sections: GuideSection[] = [];
+  const faqs: GuideFaq[] = [];
   const minutes = readMinutes(sections, faqs);
   return {
     data: {
@@ -258,55 +189,41 @@ async function buildNeighbourhoodCosts(def: GuideDef): Promise<BuiltGuide> {
       category: { key: def.category, label: def.categoryLabel },
       readMinutes: minutes,
       updated: GUIDES_UPDATED,
-      takeaways: paras(
-        sentence(o.medianPrice, `The typical ${CITY} sold price over the trailing 12 months is ${money(o.medianPrice)}.`),
-        sentence(priced.length, `${priced.length} neighbourhoods have enough sales to publish a typical price.`),
-        `Form explains more of the price spread than neighbourhood does.`,
-        `A withheld figure means too few sales, never zero sales.`,
-      ),
+      takeaways: [],
       sections,
       faqs,
       related: [],
       ctaBuyer: CTA_BUYER,
       ctaSeller: CTA_SELLER,
     },
-    figures: bundle,
+    figures: { figures: [], entities: [CITY] },
   };
 }
 
 // ── G2 · how to read a sold price ─────────────────────────────────────────
 
 async function buildReadSoldPrice(def: GuideDef): Promise<BuiltGuide> {
-  const { data, bundle } = await getSoldFigures();
-  const o = data.overall;
-  const gap =
-    o.medianPrice !== null && o.meanPrice !== null ? Math.abs(o.meanPrice - o.medianPrice) : null;
-
+  // MC-046 Stage 1 (R6): the town-wide typical, average, their gap, the band, days on market and
+  // sold-to-ask were derived from VOW records and are gone, with the tip and the FAQ answer that
+  // described where they came from. What stays explains the measures; it prints none of them.
   const sections: GuideSection[] = [
     {
       heading: "Typical is not average",
       paragraphs: paras(
         para(
           `Two different numbers get called "the price". The typical price is the midpoint: half of all sales landed above it, half below. The average adds every sale together and divides by the count.`,
-          sentence(o.medianPrice, `Across ${CITY} over the trailing 12 months the typical sold price is ${money(o.medianPrice)}.`),
-          sentence(o.meanPrice, `The average over the same sales is ${money(o.meanPrice)}.`),
-          sentence(gap, `The two sit ${money(gap)} apart.`),
         ),
         para(
-          `The gap is not an error. A handful of large rural or luxury sales pull an average upward and leave the midpoint where it is. When you see a price quoted with no label, it is worth knowing which of the two you are looking at.`,
+          `The two are rarely the same. A handful of large rural or luxury sales pull an average upward and leave the midpoint where it is. When you see a price quoted with no label, it is worth knowing which of the two you are looking at.`,
         ),
       ),
-      tip: `This site uses the midpoint for town-wide figures and the average for each neighbourhood row, matching whichever figure the page you click through to already shows. The two are never mixed inside one comparison.`,
+      tip: null,
     },
     {
       heading: "A band says more than a midpoint",
       paragraphs: paras(
         para(
-          sentence(
-            o.bandLow !== null && o.bandHigh !== null ? true : null,
-            `The middle half of ${CITY} sales over the year landed between ${money(o.bandLow)} and ${money(o.bandHigh)}.`,
-          ),
-          `That band is built by trimming the cheapest quarter and the dearest quarter of all sales and reporting what is left. It survives one unusual transaction in a way that a lowest-to-highest range does not.`,
+          `A middle-half band is built by trimming the cheapest quarter and the dearest quarter of all sales and reporting what is left. It survives one unusual transaction in a way that a lowest-to-highest range does not.`,
         ),
         para(
           `A band also needs more sales behind it than a midpoint. A midpoint is published at five sales; a band is not published below ten. A range leaks its own endpoints, and an endpoint is a real house.`,
@@ -318,9 +235,7 @@ async function buildReadSoldPrice(def: GuideDef): Promise<BuiltGuide> {
       heading: "Days on market and sold-to-ask",
       paragraphs: paras(
         para(
-          sentence(o.avgDom, `Homes that sold in ${CITY} over the trailing 12 months took ${o.avgDom} days on average.`),
-          sentence(o.soldToAskPct, `They closed at ${o.soldToAskPct}% of asking.`),
-          `Those two figures answer questions a price cannot. Days on market describes pace. Sold-to-ask describes negotiating room, and whether asking prices are set close to what the market will pay.`,
+          `Days on market and sold-to-ask answer questions a price cannot. Days on market describes pace. Sold-to-ask describes negotiating room, and whether asking prices are set close to what the market will pay.`,
         ),
         para(
           `Neither figure is published where fewer than five homes sold, for the same reason a price is not.`,
@@ -345,10 +260,6 @@ async function buildReadSoldPrice(def: GuideDef): Promise<BuiltGuide> {
 
   const faqs: GuideFaq[] = [
     {
-      question: `Where do these ${CITY} figures come from?`,
-      answer: `Completed sales recorded on the board, filtered to those that may be displayed publicly, over the trailing 12 months ending today. The same records feed the sold pages, the neighbourhood pages and the street pages.`,
-    },
-    {
       question: "Why is a figure blank instead of zero?",
       answer: `Because zero is a claim and a blank is not. Zero would say no homes sold. A blank says too few sold to publish the figure safely. Those are different facts and they are not interchangeable.`,
     },
@@ -369,7 +280,7 @@ async function buildReadSoldPrice(def: GuideDef): Promise<BuiltGuide> {
       updated: GUIDES_UPDATED,
       takeaways: paras(
         `The typical price is the midpoint. The average is not the same number and is pulled by large sales.`,
-        sentence(o.bandLow, `A middle-half band needs ten sales behind it; a midpoint needs five.`),
+        `A middle-half band needs ten sales behind it; a midpoint needs five.`,
         `A blank figure means too few sales, never zero sales.`,
         `A single address is never published as an aggregate.`,
       ),
@@ -379,24 +290,21 @@ async function buildReadSoldPrice(def: GuideDef): Promise<BuiltGuide> {
       ctaBuyer: CTA_BUYER,
       ctaSeller: CTA_SELLER,
     },
-    figures: bundle,
+    figures: { figures: [], entities: [CITY] },
   };
 }
 
 // ── G3 · is it a good time to sell ────────────────────────────────────────
 
 async function buildGoodTimeToSell(def: GuideDef): Promise<BuiltGuide> {
-  const { data, bundle } = await getSoldFigures();
+  // MC-046 Stage 1 (R6): the quarterly typicals and counts, days on market and sold-to-ask were
+  // derived from VOW records and are gone. "The last four quarters" had nothing else, so the
+  // section left whole and the guide is noindex. The live supply is an active-listing count (IDX).
   const supply = await getActiveSupply();
-  const o = data.overall;
-  const quarters = data.quarterly.filter((q) => q.medianPrice !== null);
 
-  const bundleWithSupply: GroundedFigures = {
-    figures: [
-      ...bundle.figures,
-      fig("supply.active", supply.total, `homes for sale right now`, "count", "getActiveSupply"),
-    ],
-    entities: bundle.entities,
+  const figures: GroundedFigures = {
+    figures: [fig("supply.active", supply.total, `homes for sale right now`, "count", "getActiveSupply")],
+    entities: [CITY],
   };
 
   const sections: GuideSection[] = [
@@ -405,31 +313,15 @@ async function buildGoodTimeToSell(def: GuideDef): Promise<BuiltGuide> {
       paragraphs: paras(
         para(
           `It will not tell you where prices go next. Nobody publishing a figure on this site knows that, and a page that implied otherwise would be selling something rather than informing you.`,
-          `What follows is a record of what has already happened, with the sample size behind each figure.`,
         ),
       ),
       tip: null,
     },
     {
-      heading: "The last four quarters",
-      paragraphs: paras(
-        para(
-          sentence(quarters.length, `${quarters.length} recent quarters have enough recorded sales to publish a typical price.`),
-          ...quarters.map((q) => `${q.label}: ${money(q.medianPrice)} across ${q.count} sales.`),
-        ),
-        para(
-          `Read those as a sequence, not as a trend line with a direction. Quarter-to-quarter movement in a town of this size reflects which homes happened to sell as much as it reflects what buyers were willing to pay.`,
-        ),
-      ),
-      tip: `Each quarter is gated on its own sale count. A quarter with fewer than five recorded sales carries a count and no price.`,
-    },
-    {
       heading: "Pace and negotiating room",
       paragraphs: paras(
         para(
-          sentence(o.avgDom, `Over the trailing 12 months a ${CITY} home took ${o.avgDom} days to sell on average.`),
-          sentence(o.soldToAskPct, `Sales closed at ${o.soldToAskPct}% of asking.`),
-          `Those two together describe the conditions a seller met. A short time on market with a sold-to-ask figure close to 100 describes a market clearing at asking. A longer one describes a market that negotiated.`,
+          `Days on market and sold-to-ask together describe the conditions a seller met. A short time on market with homes selling at their asking price describes a market clearing at asking. A longer one describes a market that negotiated.`,
         ),
       ),
       tip: null,
@@ -439,7 +331,7 @@ async function buildGoodTimeToSell(def: GuideDef): Promise<BuiltGuide> {
       paragraphs: paras(
         para(
           sentence(supply.total, `There are ${supply.total} homes for sale in ${CITY} right now.`),
-          `Supply is the half of the question a sold figure cannot answer. It is what a buyer sees when your home reaches the market, and it is the only number on this page that describes today rather than the past year.`,
+          `Supply is the half of the question a sold figure cannot answer. It is what a buyer sees when your home reaches the market.`,
         ),
         para(
           `The honest version of the question is not whether it is a good time in general. It is what your own home is worth against that supply, which is a valuation rather than a statistic.`,
@@ -452,13 +344,7 @@ async function buildGoodTimeToSell(def: GuideDef): Promise<BuiltGuide> {
   const faqs: GuideFaq[] = [
     {
       question: `Are ${CITY} prices going up or down?`,
-      answer: `This page shows the trailing quarters and stops there. A direction stated for the next quarter would be a forecast, and no figure on this site supports one.`,
-    },
-    {
-      question: "How long will it take to sell?",
-      answer: o.avgDom !== null
-        ? `Over the trailing 12 months the average was ${o.avgDom} days across all of ${CITY}. Your own answer depends on form, condition, price and neighbourhood, none of which an average captures.`
-        : `Not enough sales are recorded over the trailing 12 months to publish an average.`,
+      answer: `This page does not say. A direction stated for the next quarter would be a forecast, and no figure on this site supports one.`,
     },
     {
       question: "What is my home worth?",
@@ -476,9 +362,7 @@ async function buildGoodTimeToSell(def: GuideDef): Promise<BuiltGuide> {
       readMinutes: minutes,
       updated: GUIDES_UPDATED,
       takeaways: paras(
-        `This page records what has happened. It does not forecast.`,
-        sentence(o.avgDom, `A ${CITY} home took ${o.avgDom} days to sell on average over the trailing 12 months.`),
-        sentence(o.soldToAskPct, `Sales closed at ${o.soldToAskPct}% of asking.`),
+        `This page does not forecast.`,
         sentence(supply.total, `${supply.total} homes are for sale right now.`),
       ),
       sections,
@@ -487,7 +371,7 @@ async function buildGoodTimeToSell(def: GuideDef): Promise<BuiltGuide> {
       ctaBuyer: CTA_BUYER,
       ctaSeller: CTA_SELLER,
     },
-    figures: bundleWithSupply,
+    figures,
   };
 }
 
@@ -619,55 +503,34 @@ async function buildCondoFees(def: GuideDef): Promise<BuiltGuide> {
 // ── G5 · first home ───────────────────────────────────────────────────────
 
 async function buildFirstHome(def: GuideDef): Promise<BuiltGuide> {
-  const { data, bundle } = await getSoldFigures();
-  const anchor =
-    data.byType.find((t) => t.slug === "townhouse" && t.medianPrice !== null) ??
-    data.byType.find((t) => t.slug === "condo" && t.medianPrice !== null) ??
-    null;
-  const price = anchor?.medianPrice ?? null;
-
+  // MC-046 Stage 1 (R6): the worked example was anchored on the typical sold townhouse or condo
+  // price, a VOW-derived figure, and every dollar figure worked from it (down payment, premium,
+  // land transfer tax, payments) went with it. The rules and the rates stay; they are public.
   const rate = BOC_POLICY_RATE.ratePct;
   const stress = stressTestRate(rate);
-  const down = price !== null ? Math.round(minimumDownPayment(price)) : null;
-  const downPct = price !== null && down !== null ? (down / price) * 100 : null;
-  const ltt = price !== null ? ontarioLTT(price) : null;
-  const rebate = ltt !== null ? Math.min(ltt, 4000) : null;
-  const lttNet = ltt !== null && rebate !== null ? ltt - rebate : null;
-  const cmhc = price !== null && downPct !== null ? cmhcPremium(price, downPct) : null;
-  const loan = price !== null && down !== null && cmhc !== null ? price - down + cmhc : null;
-  const payAtPolicy = loan !== null ? Math.round(monthlyPayment(loan, rate, 25)) : null;
-  const payAtStress = loan !== null ? Math.round(monthlyPayment(loan, stress, 25)) : null;
 
   const figures: GroundedFigures = {
     figures: [
-      ...bundle.figures,
       fig("boc.policyRate", rate, `Bank of Canada policy rate, ${BOC_POLICY_RATE.observedOn}`, "percent", "BOC_POLICY_RATE"),
       fig("calc.stressRate", stress, "stress-test rate", "percent", "stressTestRate"),
-      fig("calc.down", down, "minimum down payment", "dollar", "minimumDownPayment"),
-      fig("calc.ltt", lttNet, "Ontario land transfer tax after the first-time rebate", "dollar", "ontarioLTT"),
-      fig("calc.cmhc", cmhc, "mortgage insurance premium", "dollar", "cmhcPremium"),
-      fig("calc.payment", payAtPolicy, "monthly payment at the policy rate", "dollar", "monthlyPayment"),
-      fig("calc.paymentStress", payAtStress, "monthly payment at the stress-test rate", "dollar", "monthlyPayment"),
     ],
-    entities: bundle.entities,
+    entities: [CITY],
   };
-
-  const anchorLabel = anchor ? anchor.label.toLowerCase() : null;
 
   const sections: GuideSection[] = [
     {
       heading: "The rate this page uses, and what it is not",
       paragraphs: paras(
         para(
-          `Every figure below is worked at the Bank of Canada policy rate, ${policyRateLabel()}.`,
+          `This page works from the Bank of Canada policy rate, ${policyRateLabel()}.`,
           `That is the only rate published in this codebase, and it is deliberately not a mortgage rate.`,
         ),
         para(
           `A policy rate is the overnight target the Bank sets for the financial system. What a lender offers you is a different number, set by that lender, and it will not match the figure used here.`,
-          `Treat the arithmetic below as the shape of the cost rather than a quote. Your own numbers come from a lender.`,
+          `Treat it as the shape of the cost rather than a quote. Your own numbers come from a lender.`,
         ),
       ),
-      tip: `The rate is stamped with the date it was read. If that date is old, the arithmetic below is old with it.`,
+      tip: `The rate is stamped with the date it was read. If that date is old, the stress-test rate below is old with it.`,
     },
     {
       heading: "The down payment is a sliding rule, not a percentage",
@@ -676,14 +539,7 @@ async function buildFirstHome(def: GuideDef): Promise<BuiltGuide> {
           `Canada sets a minimum down payment in bands. Five per cent applies to the first $500,000 of the price. Ten per cent applies to the portion between $500,000 and $1,500,000. At $1,500,000 and above the minimum is twenty per cent and mortgage insurance is not available at all.`,
         ),
         para(
-          sentence(
-            price !== null && anchorLabel ? true : null,
-            `Worked against a typical ${CITY} ${anchorLabel} at ${money(price)}, the minimum down payment is ${money(down)}.`,
-          ),
-          sentence(
-            price !== null ? true : null,
-            `That is the floor, not a recommendation. Putting down less than twenty per cent triggers mortgage insurance, which is the next item.`,
-          ),
+          `That is the floor, not a recommendation. Putting down less than twenty per cent triggers mortgage insurance, which is the next item.`,
         ),
       ),
       tip: null,
@@ -693,15 +549,10 @@ async function buildFirstHome(def: GuideDef): Promise<BuiltGuide> {
       paragraphs: paras(
         para(
           `Below twenty per cent down, mortgage default insurance is mandatory. The premium is a percentage of the loan and is normally added to the mortgage rather than paid at closing, so it quietly increases what you borrow.`,
-          sentence(cmhc, `On the worked example the premium is ${money(cmhc)}.`),
         ),
         para(
           `Ontario land transfer tax is paid at closing, in cash, and cannot be added to the mortgage.`,
-          sentence(ltt, `On the worked example it is ${money(ltt)} before any rebate.`),
-          sentence(
-            rebate,
-            `A first-time buyer in Ontario can claim a rebate of up to $4,000, which brings it to ${money(lttNet)}.`,
-          ),
+          `A first-time buyer in Ontario can claim a rebate of up to $4,000.`,
           `${CITY} is not Toronto, so there is no second municipal land transfer tax on top. That charge applies inside the City of Toronto only.`,
         ),
       ),
@@ -714,16 +565,6 @@ async function buildFirstHome(def: GuideDef): Promise<BuiltGuide> {
           `A lender does not qualify you at the rate you will pay. It qualifies you at the higher of your rate plus two points, or 5.25 per cent.`,
           sentence(stress, `Against the policy rate used here that test rate is ${stress}%.`),
         ),
-        para(
-          sentence(
-            payAtPolicy !== null && payAtStress !== null ? true : null,
-            `On the worked example the monthly payment over 25 years is ${money(payAtPolicy)} at the policy rate and ${money(payAtStress)} at the test rate.`,
-          ),
-          sentence(
-            payAtStress,
-            `The second figure is the one that decides whether you qualify. The first is closer to what you would actually pay if a lender offered you the policy rate, which no lender will.`,
-          ),
-        ),
       ),
       tip: null,
     },
@@ -732,10 +573,7 @@ async function buildFirstHome(def: GuideDef): Promise<BuiltGuide> {
   const faqs: GuideFaq[] = [
     {
       question: `How much do I need to buy in ${CITY}?`,
-      answer:
-        price !== null && down !== null && lttNet !== null
-          ? `Against a typical ${anchorLabel} at ${money(price)}, the minimum down payment is ${money(down)} and land transfer tax after the first-time rebate is ${money(lttNet)}. Legal fees, title insurance, an inspection and moving costs sit on top and are not modelled here.`
-          : `Not enough sales are recorded over the trailing 12 months to publish a typical price to work against.`,
+      answer: `The minimum down payment follows the sliding rule above, and Ontario land transfer tax is due in cash at closing, less the first-time buyer rebate of up to $4,000. Legal fees, title insurance, an inspection and moving costs sit on top and are not modelled here.`,
     },
     {
       question: "Is the rate on this page the rate I will get?",
@@ -759,7 +597,7 @@ async function buildFirstHome(def: GuideDef): Promise<BuiltGuide> {
       takeaways: paras(
         `The rate used here is the Bank of Canada policy rate, not a mortgage rate.`,
         `The minimum down payment is a sliding rule, not a flat percentage.`,
-        sentence(lttNet, `Land transfer tax is due in cash at closing and cannot be added to the mortgage.`),
+        `Land transfer tax is due in cash at closing and cannot be added to the mortgage.`,
         sentence(stress, `You qualify at ${stress}%, not at the rate you pay.`),
       ),
       sections,

@@ -1,29 +1,21 @@
 // src/lib/homeSignals.ts
-// The three "Milton right now" reads the homepage needs and nothing else had.
+// The "Milton right now" reads the homepage and the menu need and nothing else had.
 // READ-ONLY. Nothing in this file writes, and nothing in it invents a figure that
 // its source cannot support.
 //
-// WHAT IS DELIBERATELY ABSENT: a price-drop count. The only signal DB1 carried was
-// `Listing.lastPriceChangeAt`, which records THAT a price changed and never what it
-// changed from. A drop cannot be told from an increase without a prior price.
+// PUBLIC ROWS ONLY (MC-046 Stage 1, PropTx VOW Best Practices item 40). Every read here is
+// over active IDX listings or the street video registry. "Sold so far this month" and its
+// typical left the homepage and the menu with Stage 1, and so did the DB2 read behind them:
+// a sold count is VOW-derived however it is labelled, and it is not computed to be discarded.
 //
-// A prior price is now stored (DEC-PRICE-HISTORY, 2026-09-10: `Listing.priorPrice` and
-// `priceChangedAt`, written by the DB1 sync on every observed change). The function is
-// still absent, and deliberately so: the columns start empty and fill only as listings
-// change price from that date forward, so a count taken today would read 0 across Milton
-// and publish "no reductions" as though it were a measurement. It becomes honest once the
-// corpus has observations, not once the column exists.
-// See DEC-PRICE-CHANGE-NOT-DROP in the report.
+// WHAT IS DELIBERATELY ABSENT: a price-drop count. Which listing changed price, and from
+// what, is price history (VOW); so is a count of changes across the market (MC-046 R8).
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
-import { getSoldDb } from "@/lib/db";
-import { cached, CACHE_TTL } from "@/lib/cache";
-import { K_ANON_PRICE } from "@/lib/kAnon";
 import { resolveStreetName } from "@/lib/streetName";
 import { deriveVideoPoster, torontoWall } from "@/lib/streetVideo";
 
 const WEEK_MS = 7 * 86_400_000;
-const round5k = (n: number) => Math.round(n / 5000) * 5000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NEW THIS WEEK
@@ -49,50 +41,17 @@ export async function getNewThisWeekCount(): Promise<number> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SOLD SO FAR THIS MONTH
+// ON THE MARKET
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface SoldThisMonth {
-  count: number;
-  /** k-gated: null below K_ANON_PRICE, never 0 */
-  typicalPrice: number | null;
-  /** the last day included, ISO — the label must say "so far", because it is */
-  through: string;
-}
-
 /**
- * Calendar month to date, Milton, sale side, from DB2.
- *
- * TWO THINGS THE LABEL HAS TO CARRY, and the caller is why they are returned rather
- * than assumed. (1) It is MONTH TO DATE, not a month: on the 3rd it is three days of
- * sales and it will look like a collapse beside a full month if the copy pretends
- * otherwise. (2) Sold records arrive with a reporting lag, so even the completed days
- * are still filling in. "Sold so far this month" is honest; "sold this month" is not.
- *
- * The price is the same statistic the hero and the Board publish (the midpoint of the
- * pool), gated at K_ANON_PRICE and rounded the way every other price on the site is.
- * Suppression returns null, never 0.
+ * Active listings advertised today, Milton-wide: the hero's "homes for sale today" and the
+ * menu's "N for sale". The predicate is the one buildMiltonWideContext() counted with, so the
+ * figure does not move; it is read here so neither caller runs that context's sold queries
+ * for one active count (MC-046 Stage 1).
  */
-export async function getSoldThisMonth(): Promise<SoldThisMonth> {
-  const through = new Date().toISOString().slice(0, 10);
-  const db = getSoldDb();
-  if (!db) return { count: 0, typicalPrice: null, through };
-  return cached(`home:sold-mtd:${through}`, CACHE_TTL.stats, async () => {
-    const rows = (await db`
-      SELECT COUNT(*)::int AS n,
-             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS typical
-      FROM sold.sold_records
-      WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
-        AND transaction_type = 'For Sale'
-        AND sold_date >= date_trunc('month', NOW()) AND sold_date <= NOW()
-    `) as Array<{ n: number; typical: unknown }>;
-    const r = rows[0];
-    const count = Number(r?.n ?? 0);
-    const raw = r?.typical == null ? null : Number(r.typical);
-    const typicalPrice =
-      count >= K_ANON_PRICE && raw !== null && Number.isFinite(raw) ? round5k(raw) : null;
-    return { count, typicalPrice, through };
-  });
+export async function getOnMarketCount(): Promise<number> {
+  return prisma.listing.count({ where: { permAdvertise: true, status: "active" } });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

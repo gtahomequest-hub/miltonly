@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { NextRequest, NextResponse } from "next/server";
-import { getSoldDb } from "@/lib/db";
+import { soldDb, vowSystemAccess } from "@/lib/vow/door";
 import { resolveStreetName } from "@/lib/streetName";
 
 const VIP_THRESHOLD = 5; // Streets with 5+ active listings become VIP Hubs
@@ -12,10 +12,9 @@ export async function GET(request: NextRequest) {
 
 // Run after daily sync — detects VIP hub streets
 export async function POST(request: NextRequest) {
-  const secret =
-    request.headers.get("authorization")?.replace("Bearer ", "") ||
-    request.nextUrl.searchParams.get("secret");
-  if (secret !== process.env.CRON_SECRET) {
+  // MC-046 R16: the VOW door, by the Authorization header only; `?secret=` is refused.
+  const access = vowSystemAccess(request);
+  if (!access) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
   // Pull neighbourhood from DB2 sold records (most common neighbourhood for this slug).
   // Without this, the row would be created with neighbourhood=null and Phase 4.1
   // generation would skip it — the same gap that produced 115 null rows in April.
-  const sd = getSoldDb();
+  const sd = soldDb(access);
   const nbRows = sd
     ? await (sd`
         SELECT neighbourhood

@@ -46,7 +46,7 @@ export default function SoldValuationCTA() {
             See what <em>your</em> home would sell for
           </h2>
           <p className="sv-sell-p">
-            You&rsquo;ve seen what the market&rsquo;s doing. Get a grounded, no-obligation read on your
+            Thinking about selling? Get a grounded, no-obligation read on your
             own home&rsquo;s value — based on the same real Milton closings, not a portal guess.
           </p>
 

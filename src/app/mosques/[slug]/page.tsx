@@ -16,7 +16,7 @@ import {
 } from "@/lib/schema";
 import PlaceDetail from "@/components/places/PlaceDetail";
 import PlaceListings from "@/components/places/PlaceListings";
-import { PUBLIC_SALE_WHERE } from "@/lib/listings/vow";
+import { PUBLIC_SALE_WHERE, PUBLIC_LISTING_WHERE } from "@/lib/listings/vow";
 import { getListingCards } from "@/lib/listingsV2Data";
 import type { BadgeTone } from "@/components/places/types";
 import { resolveStreetName } from "@/lib/streetName";
@@ -66,16 +66,18 @@ export default async function MosqueDetailPage({ params }: Props) {
     take: 30,
   });
 
+  // PUBLIC rows only (MC-046 Stage 1, R11): this read every advertised row ever synced, so
+  // "Total listings" counted sold, rented and expired records (VOW). It now counts the listings
+  // on the site today: active sales and available leases.
   const allListings = await prisma.listing.findMany({
     where: {
-      permAdvertise: true,
-      city: config.PRISMA_CITY_VALUE,
+      ...PUBLIC_LISTING_WHERE,
       neighbourhood: { contains: mosque.neighbourhood, mode: "insensitive" },
     },
-    select: { price: true, status: true, propertyType: true },
+    select: { price: true, status: true, propertyType: true, transactionType: true },
   });
 
-  const active = allListings.filter((l) => l.status === "active");
+  const active = allListings.filter((l) => l.status === "active" && l.transactionType !== "For Lease");
   const avgPrice = active.length > 0 ? Math.round(active.reduce((s, l) => s + l.price, 0) / active.length) : 0;
 
   const types = ["detached", "semi", "townhouse", "condo"];
@@ -173,7 +175,7 @@ export default async function MosqueDetailPage({ params }: Props) {
         serviceChips={mosque.services}
         stats={[
           { value: String(active.length), label: "Active listings nearby" },
-          { value: avgPrice > 0 ? formatPriceFull(avgPrice) : "—", label: "Avg asking price" },
+          { value: avgPrice > 0 ? formatPriceFull(avgPrice) : "None listed", label: "Avg asking price" },
           { value: String(allListings.length), label: "Total listings" },
         ]}
         byType={byType.map((t) => ({ type: t.type, count: t.count, avgPrice: formatPriceFull(t.avgPrice) }))}

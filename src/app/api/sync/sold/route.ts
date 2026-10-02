@@ -15,8 +15,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { DB_CACHE_TAG } from "@/lib/db";
-import { getSoldDb } from "@/lib/db";
+import { DB_CACHE_TAG, soldDb, vowSystemAccess, type Sql } from "@/lib/vow/door";
 import { runSoldSync, type AmpConfig, type SqlExecutor } from "@/lib/vow-sync";
 
 export const maxDuration = 300;
@@ -29,7 +28,7 @@ const VOW_TOKEN = (process.env.VOW_TOKEN || "").trim();
 // SqlExecutor interface. As of v1.x, the direct (text, values) call form is
 // deprecated — must use sql.query(text, values). Confirmed empirically
 // against @neondatabase/serverless@1.0.2.
-function neonExecutor(db: NonNullable<ReturnType<typeof getSoldDb>>): SqlExecutor {
+function neonExecutor(db: Sql): SqlExecutor {
   return async (text, values) => {
     return (await db.query(text, values)) as Record<string, unknown>[];
   };
@@ -41,16 +40,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const header = req.headers.get("authorization");
-    const expected = `Bearer ${process.env.CRON_SECRET}`;
-    if (!header || !process.env.CRON_SECRET || header !== expected) {
+    // MC-046 R16: the VOW door, by the Authorization header only.
+    const access = vowSystemAccess(req);
+    if (!access) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const sd = getSoldDb();
+    const sd = soldDb(access);
     if (!sd) {
       return NextResponse.json(
-        { error: "SOLD_DATABASE_URL is not configured" },
+        { error: "DB2 (sold) is not configured" },
         { status: 503 }
       );
     }

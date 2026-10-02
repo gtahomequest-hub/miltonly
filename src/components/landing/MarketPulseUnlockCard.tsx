@@ -2,10 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Lock } from "lucide-react";
 import { postLeadDetailed, honeypotInputProps } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
-import { formatPriceFull, cleanNeighbourhoodName } from "@/lib/format";
+import { cleanNeighbourhoodName } from "@/lib/format";
+
+// MC-046 STAGE 1 (R15). This card used to "unlock" a stats packet the lead response carried:
+// the neighbourhood's 90-day sold count, days on market, sold-to-ask and market score, all DB3
+// aggregates of VOW records, shown to an anonymous submitter. The response carries no market
+// figure any more, so the card shows none: it takes the request, and the confirmation says the
+// report comes from Aamir. No stat tile, locked or unlocked, is drawn.
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SOURCE = "sales-ads-market-pulse-unlock";
@@ -18,8 +23,7 @@ const CONSENT_TEXT =
   "Brokerage). I can withdraw consent anytime by replying STOP to any SMS or " +
   "clicking unsubscribe in any email.";
 
-// 90-day window — matches src/lib/market-pulse.ts (which now reads from
-// analytics.neighbourhood_sold_stats, whose canonical window is 90 days).
+// The window the requested report covers, kept in matchCriteria for the lead audit trail.
 const PERIOD_DAYS = 90;
 
 // Auto-formatter — every keystroke calls this. Strips non-digits, drops a
@@ -40,23 +44,6 @@ function getGtag(): GtagFn | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as { gtag?: GtagFn };
   return w.gtag || null;
-}
-
-// Match the shape the ingest path returns in `stats` for this source.
-// Post-4j-fix: dollar amounts (avg/median/min/max) are permanently null
-// from the blessed analytics path. The fields stay on the type so the
-// client UI contract is stable; the optional range row never renders.
-export interface MarketPulseStatsPayload {
-  sold_count: number;
-  avg_sold_price: number | null;
-  median_sold_price: number | null;
-  avg_dom: number | null;
-  avg_sold_to_ask: number | null;
-  market_score: number | null;
-  min_sold_price: number | null;
-  max_sold_price: number | null;
-  period_days: number;
-  match_basis: string;
 }
 
 export interface MarketPulseUnlockCardProps {
@@ -81,7 +68,7 @@ export default function MarketPulseUnlockCard({
   mlsNumber,
   className = "",
 }: MarketPulseUnlockCardProps) {
-  const [stats, setStats] = useState<MarketPulseStatsPayload | null>(null);
+  const [sent, setSent] = useState(false);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [honey, setHoney] = useState("");
@@ -97,8 +84,8 @@ export default function MarketPulseUnlockCard({
   // because the analytics table is keyed on that exact value. The display
   // string strips the prefix for readable headers ("Ford market pulse").
   const neighbourhoodDisplay = cleanNeighbourhoodName(neighbourhood) || neighbourhood;
-  const headerKicker = `How ${neighbourhoodDisplay} is selling right now`;
-  const headerTitle = `${neighbourhoodDisplay} market pulse — last ${PERIOD_DAYS} days`;
+  const headerKicker = "Market report";
+  const headerTitle = `${neighbourhoodDisplay} market report, by email`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -123,9 +110,6 @@ export default function MarketPulseUnlockCard({
     setSubmitting(true);
 
     {
-      // The reveal comes back on the one response, the way it always has: the packet is
-      // computed inside the ingest path from this consented criteria snapshot, k-anonymity
-      // enforced in getMarketPulse, so the card unlocks without a second round trip.
       const result = await postLeadDetailed({
         source: SOURCE,
         intent: "buy",
@@ -145,16 +129,12 @@ export default function MarketPulseUnlockCard({
         honeypot: honey,
       });
       if (!result.ok) {
-        setError(result.error || `Could not unlock the report. Please call ${config.realtor.phone} directly.`);
+        setError(result.error || `Could not send the request. Please call ${config.realtor.phone} directly.`);
         setSubmitting(false);
         return;
       }
-      const packet = (result.stats ?? null) as MarketPulseStatsPayload | null;
-
-      // GA4 conversion event — fire AFTER res.ok so failed POSTs never count
-      // as conversions (audit F1.4). transaction_id = lead.id for GA4 dedup
-      // safety. match_basis carries the analytics slice that generated the
-      // unlock so Aamir's reporting can segment by data confidence.
+      // GA4 conversion event, fired AFTER res.ok so failed POSTs never count
+      // as conversions (audit F1.4). transaction_id = lead.id for GA4 dedup safety.
       const gtag = getGtag();
       if (gtag) {
         gtag("event", "generate_lead", {
@@ -164,71 +144,26 @@ export default function MarketPulseUnlockCard({
           source: SOURCE,
           intent: "market-pulse-unlock",
           listing_mls: mlsNumber,
-          match_basis: packet?.match_basis ?? "unknown",
         });
       }
 
-      // Reveal stats from server response. If server returned no stats
-      // (helper failure, env unset), still flip to "subscribed" state with
-      // a fallback message — the lead is captured, just no on-page reveal.
-      setStats(packet ?? {
-        sold_count: 0,
-        avg_sold_price: null,
-        median_sold_price: null,
-        avg_dom: null,
-        avg_sold_to_ask: null,
-        market_score: null,
-        min_sold_price: null,
-        max_sold_price: null,
-        period_days: PERIOD_DAYS,
-        match_basis: "deferred",
-      });
+      setSent(true);
     }
   }
 
-  // ── Unlocked state ──
-  if (stats !== null) {
+  // ── Sent state: a confirmation, no figure ──
+  if (sent) {
     return (
       <div className={`bg-[#0a1628] border border-[#1e3a5f] rounded-[14px] p-[24px] ${className}`}>
         <div className="text-[10px] font-medium tracking-[1.4px] uppercase text-[#f59e0b] mb-[6px]">
           {headerKicker}
         </div>
-        <h3 className="text-[18px] font-medium text-[#f8f9fb] leading-[1.3] tracking-tight mb-[18px]">
-          {headerTitle}
+        <h3 className="text-[18px] font-medium text-[#f8f9fb] leading-[1.3] tracking-tight mb-[10px]">
+          Request received
         </h3>
-
-        {stats.sold_count >= 5 ? (
-          <>
-            <div className="grid grid-cols-2 gap-[10px] mb-[10px]">
-              <StatTile label={`Sold (${PERIOD_DAYS}d)`} value={String(stats.sold_count)} />
-              <StatTile label="Days on market" value={stats.avg_dom !== null ? String(Math.round(stats.avg_dom)) : "—"} />
-              <StatTile label="Sold-to-ask" value={stats.avg_sold_to_ask !== null ? `${Math.round(stats.avg_sold_to_ask * 100)}%` : "—"} />
-              <StatTile label="Market score" value={stats.market_score !== null ? `${Math.round(stats.market_score)}/100` : "—"} />
-            </div>
-            {/* Optional range row — UI logic preserved per Commit 4j-fix
-                spec ("Range row display logic unchanged") but min/max are
-                permanently null from the blessed analytics path, so this
-                block never renders. Kept so the contract stays portable
-                if a future helper exposes range data. */}
-            {stats.sold_count >= 10 && stats.min_sold_price !== null && stats.max_sold_price !== null && (
-              <div className="grid grid-cols-2 gap-[10px]">
-                <StatTile label="Range — low" value={formatPriceFull(Math.round(stats.min_sold_price))} />
-                <StatTile label="Range — high" value={formatPriceFull(Math.round(stats.max_sold_price))} />
-              </div>
-            )}
-            <p className="text-[12px] text-[#94a3b8] leading-relaxed mt-[14px]">
-              Aamir&apos;s richer report — with specific examples — arrives when he calls you back.
-            </p>
-          </>
-        ) : (
-          <p className="text-[13px] text-[#cbd5e1] leading-relaxed">
-            Thin slice of recent sales for this exact match. Aamir is preparing a personalized report — you&apos;ll have it in this inbox within 24 hours.
-          </p>
-        )}
-
-        <div className="mt-[14px] text-[10px] text-[#64748b] tracking-[0.3px]">
-          Based on {stats.match_basis === "deferred" ? "Aamir's manual lookup" : stats.match_basis.replace(/_/g, " · ")}
-        </div>
+        <p className="text-[13px] text-[#cbd5e1] leading-relaxed">
+          {config.realtor.name.split(" ")[0]} is preparing your {neighbourhoodDisplay} report. You&apos;ll have it in this inbox within 24 hours.
+        </p>
       </div>
     );
   }
@@ -243,28 +178,8 @@ export default function MarketPulseUnlockCard({
         {headerTitle}
       </h3>
       <p className="text-[12px] text-[#94a3b8] leading-[1.5] mb-[14px]">
-        See how this listing compares to recent sales.
+        A personalized report on this part of {config.CITY_NAME}, prepared by {config.realtor.name.split(" ")[0]} and sent to your inbox.
       </p>
-
-      {/* Locked preview grid — skeleton-bar placeholders. Labels match the
-          unlocked StatTile labels exactly so what's promised is what's
-          delivered (no bait-and-switch on currency placeholders that the
-          k-anon analytics path can't deliver). Lock-icon overlay sits on
-          top of the grid; aria-hidden lives on the skeleton bars (decorative)
-          so screen readers still read the labels. */}
-      <div className="relative mb-[14px]">
-        <div className="grid grid-cols-2 gap-[10px] select-none">
-          <LockedTile label={`Sold (${PERIOD_DAYS}d)`} />
-          <LockedTile label="Days on market" />
-          <LockedTile label="Sold-to-ask" />
-          <LockedTile label="Market score" />
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="bg-[#07111f]/85 backdrop-blur-sm rounded-full w-12 h-12 flex items-center justify-center border border-[#f59e0b]/40">
-            <Lock className="w-5 h-5 text-[#fbbf24]" aria-hidden />
-          </div>
-        </div>
-      </div>
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="grid sm:grid-cols-2 gap-2 mb-2">
@@ -333,42 +248,13 @@ export default function MarketPulseUnlockCard({
           disabled={submitting}
           className="w-full min-h-[44px] bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 text-[#07111f] font-extrabold text-[14px] rounded-[8px] transition-colors"
         >
-          {submitting ? "Unlocking…" : "Unlock the report"}
+          {submitting ? "Sending…" : "Email me the report"}
         </button>
         <p className="text-[10px] text-[#64748b] leading-relaxed mt-2">
           I&apos;ll email a market summary, send a confirmation SMS, and add you to my Monday market update. You can opt out anytime by replying STOP.{" "}
           <Link href="/privacy" className="underline hover:text-[#cbd5e1]" target="_blank">View privacy</Link>.
         </p>
       </form>
-    </div>
-  );
-}
-
-function StatTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-[#07111f] border border-[#1e3a5f] rounded-[10px] p-[12px]">
-      <div className="text-[10px] uppercase tracking-[0.5px] text-[#94a3b8] mb-[4px]">
-        {label}
-      </div>
-      <div className="text-[18px] font-medium text-[#fbbf24]">
-        {value}
-      </div>
-    </div>
-  );
-}
-
-// Skeleton-bar placeholder tile for the locked state. Renders a solid amber
-// bar of consistent height matching the StatTile value row so the locked +
-// unlocked grids share layout. No characters, no blur — honest "data is
-// here, locked behind unlock CTA" affordance. Label matches the unlocked
-// StatTile exactly so what's promised is what's delivered.
-function LockedTile({ label }: { label: string }) {
-  return (
-    <div className="bg-[#07111f] border border-[#1e3a5f] rounded-[10px] p-[12px]">
-      <div className="text-[10px] uppercase tracking-[0.5px] text-[#94a3b8] mb-[4px]">
-        {label}
-      </div>
-      <div className="h-[22px] w-[60%] rounded bg-[#fbbf24]" aria-hidden />
     </div>
   );
 }

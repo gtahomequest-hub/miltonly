@@ -4,7 +4,7 @@
 // The page it sat under shipped 24 unique internal links, and 20 of them came from here.
 // Every published hub is named here, and so is every in-demand street, because each one is a
 // page we want found. MH-006 (MA-004 change 9) made it the whole map: the eight guides, the
-// schools and mosques with their counts, the current Market Watch edition, the flagship
+// schools and mosques with their counts (Market Watch left in MC-046 R6), the flagship
 // comparison, and the legal pages, which no forest page had linked anywhere. Every entity
 // kind is one click from the bottom of every page. /sold is listed once; a link that lands on
 // a redirect is not listed at all (the footer gate refuses a 3xx).
@@ -66,9 +66,10 @@ export function HomeFooter({ footer, brand, context }: Props) {
 
         <div className="m-fgrid">
           <div className="m-fcol">
-            {/* The basis is in the heading: these are ranked by recency-weighted sales, and the
-                old "In-demand streets" stated no basis (MA-004 defect 15). */}
-            <h3>Busiest streets, recent sales</h3>
+            {/* The basis is in the heading (MA-004 defect 15). The ranking was recency-weighted
+                sales until MC-046 (R9): a rank by sold volume is VOW-derived with no figure on
+                it, so these are the street pages with the most homes for sale today. */}
+            <h3>{footer.topStreets.length ? 'Homes for sale now, by street' : 'Streets'}</h3>
             {footer.topStreets.map((s) => (
               <a href={`/streets/${s.slug}`} key={s.slug}>
                 {s.name}
@@ -98,9 +99,7 @@ export function HomeFooter({ footer, brand, context }: Props) {
           <div className="m-fcol">
             <h3>Sell</h3>
             <a href="/sell">Home valuation</a>
-            <a href="/sold">Sold prices and trends</a>
-            <a href="/market-watch">Market watch</a>
-            {footer.edition ? <a href={`/market-watch/${footer.edition.weekOf}`}>{footer.edition.label}</a> : null}
+            <a href="/sold">Sold prices</a>
             <a href="/about">About Aamir</a>
           </div>
 

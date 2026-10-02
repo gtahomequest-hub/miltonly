@@ -37,13 +37,16 @@ async function main() {
   const { NextRequest } = await import("next/server");
   const route = await import("../src/app/api/sync/regenerate/route");
   const t0 = Date.now();
-  const res = await route.GET(new NextRequest("http://localhost/api/sync/regenerate?secret=mc049-test-secret"));
+  // MC-046 R16: the route opens the VOW door by the Authorization header only.
+  const res = await route.GET(new NextRequest("http://localhost/api/sync/regenerate", { headers: { authorization: "Bearer mc049-test-secret" } }));
   const body = await res.json();
   ok(res.status === 200 && body.paused === true, `the weekly route answers 200 {paused:true} when off (${res.status} ${JSON.stringify(body)})`);
   ok(!("checked" in body) && !("staleQueued" in body), "the paused answer reports no check and no queueing");
   ok(Date.now() - t0 < 2000, "the paused answer came without waiting on a database");
-  const denied = await route.GET(new NextRequest("http://localhost/api/sync/regenerate?secret=wrong"));
+  const denied = await route.GET(new NextRequest("http://localhost/api/sync/regenerate", { headers: { authorization: "Bearer wrong" } }));
   ok(denied.status === 401, `a wrong secret is still refused (${denied.status})`);
+  const byQuery = await route.GET(new NextRequest("http://localhost/api/sync/regenerate?secret=mc049-test-secret"));
+  ok(byQuery.status === 401, `the right secret in ?secret= is refused: header only (MC-046 R16) (${byQuery.status})`);
 
   // the hourly route's decisions (MC-047 step 0): a queued BUILD is left queued when the switch is
   // off, as a queued regenerate is. The plan is driven directly, then a queue is run through it the

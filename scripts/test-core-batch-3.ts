@@ -45,12 +45,20 @@ async function main() {
   ok(NOT_A_VIOLATION.test("no violation here") && !NOT_A_VIOLATION.test("tenure characterization"), "judge: the label pattern matches the judge's own wording only");
 
   // (c)
-  const meta = buildHubMeta("Beaty", { typicalPrice: 941_341, salesCount: 119 } as never, "urban");
-  const rural = buildHubMeta("Nassagaweya", { typicalPrice: null, salesCount: 0 } as never, "rural");
-  for (const [k, v] of Object.entries({ ...meta, ruralTitle: rural.metaTitle, ruralDesc: rural.metaDescription })) {
+  const meta = buildHubMeta("Beaty", { activeCount: 17, streetCount: 31 }, "urban");
+  const rural = buildHubMeta("Nassagaweya", { activeCount: 0, streetCount: 0 }, "rural");
+  // A generator still passing the old sold aggregate must get a figure-free description too.
+  const legacy = buildHubMeta("Beaty", { typicalPrice: 941_341, salesCount: 119 }, "urban");
+  for (const [k, v] of Object.entries({ ...meta, ruralTitle: rural.metaTitle, ruralDesc: rural.metaDescription, legacyDesc: legacy.metaDescription })) {
     ok(!v.includes("—"), `hubMeta ${k} carries no em-dash: ${v}`);
   }
-  ok(meta.metaDescription.includes("typically $940,000"), "hubMeta: the hook still carries the rounded typical");
+  // MC-046 Stage 1 (R4): no VOW figure in a hub head. The description states homes for sale
+  // today and street guides, never a price or a sale count.
+  for (const d of [meta.metaDescription, rural.metaDescription, legacy.metaDescription]) {
+    ok(!/\$|typically|\bsales\b|\bsold\b|tracked|last 12 months/i.test(d), `hubMeta: the description carries no sold figure: ${d}`);
+  }
+  ok(meta.metaDescription.includes("17 homes for sale today") && meta.metaDescription.includes("31 street guides"), "hubMeta: the description states the active count and the street guides");
+  ok(!/941|940|119/.test(legacy.metaDescription), "hubMeta: the legacy sold aggregate is never read");
   const hubLive = stripComments(read("src/lib/hubLive.ts"));
   ok(/title: metaTitle,/.test(hubLive) && !/content\.metaTitle \?\? metaTitle/.test(hubLive), "hubLive: the title is the live formula, not the stored snapshot");
   const hubMetaCheck = stripComments(read("scripts/verify/checks/hub-meta.mjs"));

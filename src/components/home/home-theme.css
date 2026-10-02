@@ -849,7 +849,8 @@
 
 /* dim inline hero stats — 2026-07-21: moved ABOVE the ask card (Better
    pattern: credibility primes before the ask). */
-/* FIVE tiles since 2026-09-10, not four: "available to rent" joined the row when
+/* MC-046: THREE tiles now (for sale, new in 7 days, to rent); the two sold figures left.
+   History: FIVE tiles since 2026-09-10, not four: "available to rent" joined the row when
    "on the market today" was corrected to "homes for sale today". Four sale-side figures
    and one rent-side one, each naming its own market.
 
@@ -885,10 +886,11 @@
   margin-top: 8px;
 }
 @media (max-width: 720px) {
+  /* Three public counts since MC-046 (R7): one row of three, no orphan on a second row. */
   .home-v2 .m-herostats {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px 16px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px 12px;
     text-align: center;
   }
 }

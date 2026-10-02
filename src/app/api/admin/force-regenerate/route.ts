@@ -17,17 +17,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateStreetContent } from "@/lib/generateStreet";
+import { vowSystemAccess, withVowAccess } from "@/lib/vow/door";
 
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
-  const secret =
-    request.headers.get("authorization")?.replace("Bearer ", "") ||
-    request.nextUrl.searchParams.get("secret");
-  if (secret !== process.env.CRON_SECRET) {
+  // MC-046 R16: a VOW-reading cron route opens the door by the Authorization header only
+  // (`Bearer <CRON_SECRET>`, constant time); a `?secret=` query parameter is refused.
+  const access = vowSystemAccess(request);
+  if (!access) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  return withVowAccess(access, () => runPOST(request));
+}
 
+async function runPOST(request: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: "ANTHROPIC_API_KEY is not set" },

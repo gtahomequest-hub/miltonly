@@ -5,23 +5,25 @@
 // <ValueLanding> shell + same HomeValuationCard, only the data fetch swaps
 // to street grain (getStreetPageData). Do not foreclose that here.
 //
-// noindex (print/paid surface — kept out of Google, no thin-page dilution).
-// ChromeGate suppresses the global navy Navbar for /value; SiteNav (rendered
+// noindex, follow (print/paid surface, kept out of Google, no thin-page dilution; its links are
+// still followed). ChromeGate suppresses the global navy Navbar for /value; SiteNav (rendered
 // by ValueLanding) owns the chrome, mirroring /sales/ads + /sell.
+//
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40): every figure is gone ("N homes sold ...
+// typical sold ... median days on market"), and with them the getHubData call that read them.
+// The page reads the Neighbourhood row and nothing else.
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getHubData } from "@/lib/hubData";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
-import ValueLanding, { type ValueData } from "@/components/value/ValueLanding";
+import ValueLanding from "@/components/value/ValueLanding";
 import { getMegaLive } from "@/lib/megaLive";
 import "../../sell/sell-theme.css";
 import "../value-theme.css";
 
-// ISR: rebuild the baseline hourly so live sold numbers don't freeze at
-// build time (getHubData's own Neon fetch cache is also 3600s).
+// ISR, hourly (the menu's live content is the only thing on the page that moves).
 export const revalidate = 3600;
 
 // Prebuild all 24 canonical neighbourhood slugs. Unknown slugs fall through
@@ -39,12 +41,16 @@ export async function generateMetadata(
     select: { name: true },
   });
   const name = nb?.name ?? config.CITY_NAME;
-  return genMeta({
-    title: `See Your Home's Value: ${name}, ${config.CITY_NAME}`,
-    description: `Free, no-obligation home valuation for ${name}, ${config.CITY_NAME}, prepared by hand by ${config.realtor.name} from local sold data, not an algorithm.`,
-    canonical: `${config.SITE_URL}/value/${params.neighbourhood}`,
-    noIndex: true,
-  });
+  return {
+    ...genMeta({
+      title: `See Your Home's Value: ${name}, ${config.CITY_NAME}`,
+      description: `Free, no-obligation home valuation for ${name}, ${config.CITY_NAME}, prepared by hand by ${config.realtor.name} from local sold data, not an algorithm.`,
+      canonical: `${config.SITE_URL}/value/${params.neighbourhood}`,
+      noIndex: true,
+    }),
+    // noindex, FOLLOW (MC-046 ruling 9); the shared helper's noIndex also sets nofollow.
+    robots: { index: false, follow: true },
+  };
 }
 
 export default async function ValueNeighbourhoodPage(
@@ -58,22 +64,12 @@ export default async function ValueNeighbourhoodPage(
   });
   if (!nb) notFound();
 
-  // Same seam /neighbourhoods/[slug] uses. Null (unpublished hub) OR k-anon-
-  // silent (thin sales) => the number-free editorial variant. No fabrication.
-  const hub = await getHubData(slug);
-  const grounded =
-    hub != null &&
-    hub.stats.typicalPrice != null &&
-    hub.stats.sold12mo != null &&
-    hub.stats.sold12mo > 0;
-
-  const data: ValueData | null = grounded
-    ? {
-        typicalPrice: hub!.stats.typicalPrice as number,
-        sold12mo: hub!.stats.sold12mo as number,
-        dom: hub!.stats.dom,
-      }
-    : null;
-
-  return <ValueLanding locationName={nb.name} data={data} live={await getMegaLive().catch(() => undefined)} />;
+  return (
+    <ValueLanding
+      locationName={nb.name}
+      soldViewHref={`/sold?nbhd=${encodeURIComponent(slug)}`}
+      returnPath={`/value/${slug}`}
+      live={await getMegaLive().catch(() => undefined)}
+    />
+  );
 }

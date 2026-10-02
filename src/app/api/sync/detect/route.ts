@@ -4,6 +4,7 @@ import { config } from "@/lib/config";
 import { extractStreetName } from "@/lib/streetUtils";
 import { parseLivingAreaRange } from "@/lib/sync/parse-utils";
 import { revalidateListingSurfaces } from "@/lib/revalidateSurfaces";
+import { vowSystemAccess } from "@/lib/vow/door";
 
 export const maxDuration = 300;
 
@@ -214,9 +215,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const secret = request.headers.get("authorization")?.replace("Bearer ", "") ||
-    request.nextUrl.searchParams.get("secret");
-  if (secret !== process.env.CRON_SECRET) {
+  // MC-046 R16: this route reads or writes VOW data, so it opens the door by the Authorization
+  // header only (constant time); a `?secret=` query parameter is refused, and an unset
+  // CRON_SECRET refuses everyone.
+  if (!vowSystemAccess(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -415,7 +417,8 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000";
-    fetch(`${baseUrl}/api/sync/generate?secret=${process.env.CRON_SECRET}`, { method: "GET" }).catch(() => {});
+    // MC-046 R16: /api/sync/generate takes the secret in the Authorization header only.
+    fetch(`${baseUrl}/api/sync/generate`, { method: "GET", headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` } }).catch(() => {});
   }
 
   // MC-017: the listing, condo and hub pages are ISR; a run that wrote rows drops them.

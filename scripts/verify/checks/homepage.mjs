@@ -22,13 +22,12 @@
 //      rail link must be present in the nav markup whether or not its panel is open.
 //      The panel is progressive enhancement; the links are not.
 //
-//   3. EVERY FIGURE EQUALS ITS SOURCE. The homepage publishes each neighbourhood's
-//      typical sold price. That figure belongs to the hub page, and this asserts the two
-//      agree by recomputing the record side from DB2 — the same record hub-meta.mjs
-//      checks the hub page itself against. Homepage == record and hub page == record
-//      together mean homepage == hub page, without this check having to parse a second
-//      template. Suppression is asserted in both directions: a sub-k hood must print no
-//      price here, and a hood with a price must not be silent.
+//   3. NO VOW-DERIVED VALUE (MC-046 Stage 1, PropTx VOW Best Practices item 40). The page
+//      published each neighbourhood's typical sold price and sales count, the all-Milton
+//      typical, sold so far this month, the 12-month sales count, sold-to-ask and The Board.
+//      All of it left the signed-out view. This asserts their ABSENCE: no data-fig of theirs,
+//      no Board markup, none of their keys in the RSC payload, the ladder ranked by homes
+//      for sale (ties A to Z), and the neutral line exactly once outside the menu.
 //
 //   3b. EVERY MILTON-WIDE FIGURE, BY VALUE AND BY FORMAT. Added 2026-09-10, because the
 //      first version of this check passed while two figures on the page were wrong, under a
@@ -70,7 +69,25 @@ const LINK_FLOOR = 50;
 const MENU_TRIGGERS = ['/listings', '/rentals', '/streets', '/sell'];
 const RAIL_SAMPLE = [
   '/rentals', '/sold', '/condos', '/freehold', '/potl', '/compare', '/exclusive',
-  '/neighbourhoods', '/guides', '/schools', '/mosques', '/condos-guide', '/about', '/market-watch',
+  '/neighbourhoods', '/guides', '/schools', '/mosques', '/condos-guide', '/about',
+];
+// /market-watch left the rails with MC-046 (R6, R8): Market Watch is out of the menu entirely.
+
+/** THE FIGURES THAT LEFT (MC-046 Stage 1). Any of these on the page, anywhere, is a finding. */
+const VOW_FIGS = /^(sold-mtd|typical-milton|proof-sales-12mo|proof-sold-to-ask|nbhd-typical|board-.*|menu-sell-.*|menu-sold-.*|menu-mw-.*|menu-buy-changes|menu-rent-(leased|days|lta)|menu-rent-(detached|semi|townhouse|condo)(-whole|-basement)?)$/;
+/** Their keys in the flight payload: the homepage's data crosses to a client component, so a
+ *  field the markup does not render would still be served. */
+const VOW_KEYS = /\\?"(soldMonthToDate|soldMonthTypical|sold12mo|soldToAskPct|typicalSoldPrice|salesCount|daysToSell|soldToAsk|leasedToAsk|soldMtd|priceChanges)\\?"\s*:/;
+/** Their markup and wording. */
+const VOW_MARKUP = [
+  [/<section\b[^>]*class="brd"|id="board"/, 'The Board'],
+  [/class="m-mega-figs"/, 'a menu figures block'],
+  [/class="m-mega-edition"/, 'a Market Watch edition in the menu'],
+  [/sold so far this month/i, '"sold so far this month"'],
+  [/typical Milton home/i, '"typical Milton home"'],
+  [/Busiest streets|Most sales/, 'a strip or column ranked by sales'],
+  [/class="m-mega-stripnote">\d[\d,]* sold</, 'a strip note counting sales'],
+  [/pool too thin to publish/, 'a hub price suppression note'],
 ];
 
 /** Unique internal hrefs, excluding build assets — the same rule used to measure the
@@ -121,10 +138,6 @@ function figures(html) {
   return out;
 }
 
-/** The compact money form the hero prints. Re-derived from compactPrice, never imported. */
-const compact = (n) =>
-  n >= 1e6 ? `${(n / 1e6).toFixed(2).replace(/\.?0+$/, '')}M` : n >= 1e3 ? `${Math.round(n / 1e3)}K` : `${n}`;
-
 const int = (n) => Number(n).toLocaleString('en-CA');
 
 /**
@@ -141,35 +154,17 @@ const int = (n) => Number(n).toLocaleString('en-CA');
 const FIG_SPECS = [
   { fig: 'on-market', source: 'onMarket', expect: (v) => String(v), parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^\d{1,5}$/ },
   { fig: 'new-week', source: 'newThisWeek', expect: (v) => String(v), parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^\d{1,5}$/ },
-  { fig: 'sold-mtd', source: 'soldMonthToDate', expect: (v) => String(v), parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^\d{1,5}$/ },
-  {
-    fig: 'typical-milton', source: 'typicalMilton',
-    expect: (v) => `$${compact(v)}`,
-    parse: (t) => {
-      const m = t.match(/^\$\s*([\d.]+)(K|M)$/);
-      return m ? Number(m[1]) * (m[2] === 'M' ? 1e6 : 1e3) : NaN;
-    },
-    tol: 500, pattern: /^\$\s*[\d.]+(K|M)$/,
-  },
   // NOT sale-side, and asserted against BOTH the record and the page it is copied from.
   // See the /rentals cross-check below: equality with the record is not enough, because the
   // point of this figure is that two surfaces state one number.
   { fig: 'rentals-available', source: 'rentalsAvailable', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'proof-street-pages', source: 'publishedStreetPages', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
-  // THE MENU'S LEAD SENTENCES state three of the same figures. Same source, same record, so
+  // THE MENU'S LEAD SENTENCES state four of the same figures. Same source, same record, so
   // the menu cannot open with a number the page below it contradicts.
   { fig: 'menu-buy-active', source: 'onMarket', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'menu-buy-new', source: 'newThisWeek', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'menu-streets-pages', source: 'publishedStreetPages', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'menu-rent-now', source: 'rentalsAvailable', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
-  { fig: 'menu-sold-mtd', source: 'soldMonthToDate', expect: (v) => String(v), parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^\d{1,5}$/ },
-  { fig: 'proof-sales-12mo', source: 'sold12mo', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
-  {
-    fig: 'proof-sold-to-ask', source: 'soldToAskPct',
-    expect: (v) => `${Math.round(v)}%`,
-    parse: (t) => Number(t.replace('%', '')),
-    tol: 0.5, pattern: /^\d{1,3}%$/,
-  },
 ];
 
 /** JSON-LD nodes, parsed. Returns [] when the page emits none, which is itself a finding. */
@@ -275,20 +270,24 @@ export default {
     const missingTriggers = MENU_TRIGGERS.filter((h) => !navLinks.has(h));
     const missingRail = RAIL_SAMPLE.filter((h) => !navLinks.has(h));
 
-    // ── 3. figures against the record ────────────────────────────────────
-    const hoodFigs = figs.filter((f) => f.fig === 'nbhd-typical' && f.slug);
-    const priceMismatch = [], subKLeak = [], silentSplit = [], noRecord = [];
-    for (const f of hoodFigs) {
-      const rec = hubRecord.hub(f.slug);
-      if (!rec) { noRecord.push(f.slug); continue; }
-      const expected = rec.typicalRounded;
-      if (expected === null) {
-        if (f.value !== null) subKLeak.push(`${f.slug}: homepage states $${f.value.toLocaleString()} off ${rec.salesCount} sales (below k=5)`);
-        if (!/thin/i.test(f.text)) silentSplit.push(`${f.slug}: sub-k pool but the card prints "${f.text}"`);
-      } else if (f.value !== expected) {
-        priceMismatch.push(`${f.slug}: homepage ${f.value === null ? 'silent' : `$${f.value.toLocaleString()}`} vs live $${expected.toLocaleString()}`);
-      }
+    // ── 3. NO VOW-DERIVED VALUE (MC-046 Stage 1) ─────────────────────────
+    // The figures, the markup and the payload keys that left, each asserted absent; the
+    // ladder ranked by homes for sale now, ties A to Z; the neutral line once in the body.
+    const vowFigs = figs.filter((f) => VOW_FIGS.test(f.fig)).map((f) => `${f.fig}="${f.text}"`);
+    const vowMarkup = VOW_MARKUP.filter(([re]) => re.test(html)).map(([, what]) => what);
+    const vowKey = html.match(VOW_KEYS);
+    const ladderAt = html.indexOf('class="mh-ladder"');
+    const ladder = ladderAt === -1 ? '' : html.slice(ladderAt, html.indexOf('</ol>', ladderAt));
+    const rungs = [...ladder.matchAll(/class="mh-ladname">([^<]+)<[\s\S]*?data-fig="nbhd-active"[^>]*data-value="(\d+)"/g)].map((m) => ({ name: m[1].replace(/&amp;/g, '&').replace(/&#x27;|&#39;/g, "'"), n: Number(m[2]) }));
+    const ladderBad = [];
+    for (let k = 1; k < rungs.length; k++) {
+      const a = rungs[k - 1], b = rungs[k];
+      if (b.n > a.n || (b.n === a.n && b.name.localeCompare(a.name) < 0)) ladderBad.push(`${a.name} (${a.n}) before ${b.name} (${b.n})`);
     }
+    const hubCount = hubRecord.publishedSlugs.length;
+    const body = html.replace(nav, '');
+    const soldLines = (body.match(/data-sold-history-line/g) || []).length;
+    const navSoldLines = (nav.match(/data-sold-history-line/g) || []).length;
 
     // ── 3b. every Milton-wide figure, by value and by format ─────────────
     // A missing figure is a section that silently stopped rendering, which no visual check
@@ -342,29 +341,12 @@ export default {
     // ── 3d. THE MENU IS A SURFACE TOO ────────────────────────────────────
     // The mega menu printed "$937,465.504", "27.829694323144103" and a ratio wearing a
     // percent sign, on production, for as long as the panel existed. Every gate written to
-    // that point read the page BODY, and none of them opened a menu — so a surface that
-    // publishes site figures had no coverage at all.
-    //
-    // Two rules, both cheap:
-    //   · the menu's three market figures must equal what THE BOARD renders on the same
-    //     page. One page, two surfaces, one number — no new record needed.
+    // that point read the page BODY, and none of them opened a menu. The menu's market
+    // figures were then asserted equal to The Board's; both left with MC-046 (R7, R8), and
+    // section 3 asserts their absence. What remains is the rule that caught all three:
     //   · NOTHING carrying data-fig anywhere on this page may render a raw float. That one
     //     regex would have caught all three defects on the day they shipped, and it catches
     //     the next one without anybody predicting which figure it will be.
-    // Compared on data-value, not rendered text: the Board's tile prints "28" and captions
-    // it "days" in a sibling element, while the menu prints "28 days" in one. Both declare
-    // the same canonical string in data-value, which is what the attribute is for.
-    const val = (k) => { const f = figs.find((x) => x.fig === k); return f ? (f.value === null ? f.text : String(f.rawValue ?? f.text)) : null; };
-    const menuPairs = [
-      ['menu-sell-days', 'board-days'],
-      ['menu-sell-sta', 'board-sta'],
-    ];
-    const menuMismatch = [];
-    for (const [menuKey, boardKey] of menuPairs) {
-      const m = val(menuKey), b = val(boardKey);
-      if (m === null || b === null) { menuMismatch.push(`${menuKey}/${boardKey}: ${m ?? 'absent'} vs ${b ?? 'absent'}`); continue; }
-      if (m.replace(/\s/g, '') !== b.replace(/\s/g, '')) menuMismatch.push(`${menuKey} "${m}" != ${boardKey} "${b}"`);
-    }
 
     // A raw float is a formatting failure whatever the figure is: 3+ decimal places, or any
     // decimal at all in a value that also carries a currency or percent sign.
@@ -422,17 +404,17 @@ export default {
         ['as rendered', figReport.join(' · ') || 'none read'],
         ['published street pages (record)', homeRecord.publishedStreetPages],
         ['rentals available: homepage / /rentals / record', `${homeRentalsShown ?? '-'} / ${rentalsShown ?? '-'} / ${homeRecord.rentalsAvailable}`],
-        ['menu sell figures', figs.filter((f) => f.fig.startsWith('menu-sell-')).map((f) => `${f.fig}="${f.text}"`).join(' · ') || 'none'],
+        ['VOW-derived figures found (must be none)', vowFigs.join(' · ') || 'none'],
         ['published StreetContent rows (record)', homeRecord.publishedContentRows],
-        ['neighbourhood price figures', hoodFigs.length],
-        ['sub-k hoods (price must be silent)', hoodFigs.filter((f) => hubRecord.hub(f.slug) && hubRecord.hub(f.slug).typicalRounded === null).map((f) => f.slug).join(', ') || 'none'],
+        ['neighbourhood ladder rungs (active count)', `${rungs.length} of ${hubCount} published hubs`],
+        ['neutral line: body / menu', `${soldLines} / ${navSoldLines}`],
         ['JSON-LD nodes parsed', nodes.length],
       ],
       assertions: [
         ['homepage returns 200', r.status, 200],
         [`unique internal links >= ${LINK_FLOOR}`, links.size >= LINK_FLOOR, true],
         // A parser that reaches nothing must fail on its own coverage.
-        ['neighbourhood price figures found', hoodFigs.length > 0, true],
+        ['neighbourhood ladder rungs found', rungs.length > 0, true],
         ['chrome contract: labelled nav, skip link, GET search, <details> menu, map footer with the brief form', chromeBad.length, 0],
         ['menu triggers rendered as buttons', nonAnchorTriggers.length, 0],
         ['menu trigger hrefs in served nav markup', missingTriggers.length, 0],
@@ -445,31 +427,34 @@ export default {
         ['/favicon.ico is a 200 ICO that is not the default triangle', icon.icoOk, true],
         ['/icon.svg is a 200 SVG of the wordmark M on the forest ground', icon.svgOk, true],
         ['homepage rentals figure == the figure /rentals publishes', rentalsAgree, true],
-        ['menu figure != the Board figure on the same page', menuMismatch.length, 0],
+        ['VOW-derived data-fig figures on the page (MC-046)', vowFigs.length, 0],
+        ['VOW-derived markup or wording on the page (MC-046)', vowMarkup.length, 0],
+        ['VOW-derived keys in the RSC payload (MC-046)', vowKey ? 1 : 0, 0],
+        ['ladder rungs == published hubs', rungs.length, hubCount],
+        ['ladder rungs out of order (active count desc, ties A to Z)', ladderBad.length, 0],
+        ['neutral line in the body, outside the menu', soldLines, 1],
         ['any data-fig rendering a raw float', rawFloats.length, 0],
         ['em-dashes in rendered copy', emDashes.length, 0],
         ['en-dashes outside a numeric range', enDashes.length, 0],
-        ['neighbourhood figure != its hub record', priceMismatch.length, 0],
-        ['neighbourhood figure off a sub-k pool', subKLeak.length, 0],
-        ['sub-k hood prints a price instead of its suppression', silentSplit.length, 0],
         ['WebSite node present', Boolean(website), true],
         ['Organization node present', Boolean(org), true],
         ['SearchAction on the WebSite node', Boolean(searchAction), true],
       ],
       notes: [
-        `neighbourhood figures with no DB2 record (not asserted): ${noRecord.join(', ') || 'none'}`,
         `published pages ${homeRecord.publishedStreetPages} vs published content rows ${homeRecord.publishedContentRows}: the difference is content published for a slug with no ResidentialStreet entity, which the sitemap refuses`,
-        'homepage == record and hub page == record (hub-meta) together assert homepage == hub page',
       ],
       examples: [
-        ...priceMismatch, ...subKLeak, ...silentSplit,
+        ...vowFigs.map((f) => `VOW-derived figure: ${f}`),
+        ...vowMarkup.map((w) => `VOW-derived markup: ${w}`),
+        ...(vowKey ? [`VOW-derived key in the payload: ${vowKey[0]}`] : []),
+        ...ladderBad.map((b) => `ladder out of order: ${b}`),
         ...missingTriggers.map((h) => `menu trigger missing from nav markup: ${h}`),
         ...missingRail.map((h) => `rail link missing from nav markup: ${h}`),
         ...absent, ...malformed, ...offSource,
         ...(pagesMatch ? [] : [`street-page figure shows ${pagesShown} vs ${homeRecord.publishedStreetPages} published pages`]),
         ...(rentalsAgree ? [] : [`rentals: homepage ${homeRentalsShown ?? 'absent'} vs /rentals ${rentalsShown ?? 'absent'}`]),
         ...icon.notes,
-        ...menuMismatch, ...rawFloats,
+        ...rawFloats,
         ...emDashes.map((c) => `em-dash: ...${c}...`),
         ...enDashes.map((c) => `en-dash outside a numeric range: ...${c}...`),
       ],

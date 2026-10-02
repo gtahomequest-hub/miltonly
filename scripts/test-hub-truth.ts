@@ -4,14 +4,14 @@
 //
 //   1. DRIFT. calcHubDataHash folds the typical to $10,000, the sale count, days on market and
 //      the active count; a change inside that is not drift, a change beyond it is. Both hub
-//      generators write that hash, the page drops FAQPage while drifted, and the regenerate
-//      route reads the same drift function. The cron entries exist.
+//      generators write that hash and the regenerate route reads the same drift function. The
+//      cron entries exist. (MC-046: the page no longer gates FAQPage on drift; it filters.)
 //   2. PRERENDER. The hub page's generateStaticParams reads the published hubs, and the warm
 //      job is on the crons after each sold and analytics job.
 //   3. DEC-TYPICAL-MEDIAN. No AVG(sold_price) is left in the files that publish a typical
-//      (the street page, the AI inputs, the hub input, the ladder, the battery's record), the
-//      ladder's medianOf matches PERCENTILE_CONT, /sold has no "average" tile beside the
-//      typical and its sign-in redirect carries the query.
+//      (the street page, the AI inputs, the hub input, the battery's record), /sold has no
+//      "average" tile beside the typical and its sign-in redirect carries the query. MC-046:
+//      the ladder reads no sold record and is ordered by active listings.
 //   4. Bronte Meadows is an urban hub in the seed; a polygon-less rural hub's siblings come
 //      from the rural tier's order.
 //   5. The street page's up-link reads the registry row and nothing else.
@@ -19,7 +19,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { calcHubDataHash } from "../src/lib/hubDataHash";
-import { medianOf } from "../src/lib/hubStreetLadder";
 import { NEIGHBOURHOOD_SEED } from "../src/lib/neighbourhood";
 
 const ROOT = resolve(__dirname, "..");
@@ -47,7 +46,10 @@ function ok(cond: boolean, label: string) {
     ok(/const inputHash = calcHubDataHash\(input\)/.test(g) && !/createHash\("sha256"\)\.update\(JSON\.stringify\(input\)\)/.test(g), `${f} writes the tolerance hash`);
   }
   const page = code("src/app/neighbourhoods/[slug]/page.tsx");
-  ok(/data\.faqs\.length && !drift\.drifted \? \[generateFAQSchema\(data\.faqs\)\]/.test(page), "the hub page emits FAQPage only when not drifted");
+  // MC-046 Stage 1 (R2): the FAQPage follows exactly the filtered, rendered FAQ set. The drift
+  // gate read the sold aggregate to decide, and the visitor page no longer reads it.
+  ok(/data\.faqs\.length \? \[generateFAQSchema\(data\.faqs\)\]/.test(page), "the hub page's FAQPage is exactly the rendered FAQ list");
+  ok(!/hubDrift|getHubInputCached/.test(page.split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n")), "the hub page reads neither hubDrift nor the DB2 hub input");
   const route = code("src/app/api/sync/regenerate-hubs/route.ts");
   ok(/hubDrift\(h\.neighbourhoodSlug\)/.test(route) && /deepseekOnly: true/.test(route) && /HUBS_PER_RUN = 3/.test(route), "the regenerate route reads hubDrift, DeepSeek only, three a run");
   ok(/hubFallbackModel\(opts\?\.deepseekOnly\)/.test(code("src/lib/ai/hub/generateHubContent.ts")) && /hubFallbackModel\(opts\?\.deepseekOnly\)/.test(code("src/lib/ai/hub/generateUrbanHubContent.ts")), "both content generators honour deepseekOnly");
@@ -82,15 +84,14 @@ function ok(cond: boolean, label: string) {
     const s = code(f).split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
     ok(!/AVG\(sold_price\)/.test(s), `${f} computes no AVG(sold_price) outside a comment`);
   }
-  ok(!/SUM\(sold_price\)/.test(code("src/lib/hubStreetLadder.ts")) && /array_agg\(sold_price ORDER BY sold_price\)/.test(code("src/lib/hubStreetLadder.ts")), "the ladder pools prices, not sums");
-  ok(medianOf([]) === null, "medianOf of nothing is null");
-  ok(medianOf([5]) === 5, "medianOf of one is the one");
-  ok(medianOf([1, 2, 3, 4]) === 2.5, "medianOf interpolates an even sample like PERCENTILE_CONT");
-  ok(medianOf([9, 1, 5]) === 5, "medianOf sorts first");
-  ok(medianOf([100_000, 1_000_000, 2_000_000, 9_000_000, 9_500_000]) === 2_000_000, "medianOf ignores the tail a mean would follow");
-  const sold = code("src/components/sold/SoldAggregates.tsx");
-  ok(!/Average sold price/.test(sold) && !/overall\.meanPrice/.test(sold), "/sold prints no average tile beside the typical");
+  // MC-046 Stage 1 (R9): the ladder carries no sold figure and reads no sold record; it is
+  // ordered by homes for sale today (IDX), ties alphabetical.
+  const ladder = code("src/lib/hubStreetLadder.ts").split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+  ok(!/getSoldDb|sold_price|sold\.sold_records/.test(ladder), "the ladder reads no sold record");
+  ok(/PUBLIC_SALE_WHERE/.test(ladder) && /b\.activeCount - a\.activeCount \|\| a\.name\.localeCompare\(b\.name\)/.test(ladder), "the ladder is ordered by active listings, ties alphabetical");
   const soldPage = code("src/app/sold/page.tsx");
+  // MC-046 Stage 1 (R6): the aggregate layer left /sold; the page prints no typical, average or count.
+  ok(!/SoldAggregates|getMiltonSoldAggregates|getMiltonSoldOverall|getMiltonSoldTotals/.test(soldPage), "/sold renders no sold aggregate and no 30/90-day count");
   ok(/const returnTo = `\/sold\?type=\$\{typeParam\}\$\{nbhdQ\}\$\{ptypeQ\}`/.test(soldPage) && /encodeURIComponent\(returnTo\)/.test(soldPage), "/sold's sign-in returns to the filtered view");
   ok(/hubChips\.map\(\(nb\) =>/.test(soldPage) && !/neighbourhoods\.slice\(0, 10\)/.test(soldPage), "/sold's chip row is every published hub");
   ok(/nbhdLabel \? <>\{nbhdLabel\} <em>sold<\/em> homes<\/>/.test(soldPage), "/sold's H1 names the hub");
@@ -104,7 +105,9 @@ function ok(cond: boolean, label: string) {
   ok(bm?.profile === "urban_hub" && bm?.kind === "urban", "bronte-meadows is an urban hub in the seed");
   const hubData = code("src/lib/hubData.ts");
   ok(/NEIGHBOURHOOD_SEED\.filter\(\(n\) => n\.kind === "rural" && n\.slug !== slug && publishedSet\.has\(n\.slug\)\)/.test(hubData), "a polygon-less rural hub's siblings come from the rural tier's order");
-  ok(/saleAggQuery\(hood\.rawStrings\)/.test(hubData), "sibling typicals come from the hub's own aggregate");
+  // MC-046 Stage 1: the visitor hub reads no DB2 aggregate at all (siblings, compare, meta).
+  const hubDataCode = hubData.split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+  ok(!/saleAggQuery|assembleAggregates|buildMiltonWideContext|getHubInputCached|getSoldDb|getAnalyticsDb/.test(hubDataCode), "getHubData reads no sold aggregate");
   const rural = NEIGHBOURHOOD_SEED.filter((s) => s.kind === "rural").map((s) => s.slug);
   ok(!rural.includes("bronte-meadows") && !rural.includes("milton-north"), "the rural tier carries no thin-urban hub");
 }

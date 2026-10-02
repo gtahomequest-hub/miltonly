@@ -54,6 +54,12 @@
 // is hand-maintained and has been wrong before. Verify it against the current rate sheet
 // before quoting a total.
 import { readFileSync, appendFileSync, existsSync } from "node:fs";
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 
 function loadEnvLocal(): void {
   for (const line of readFileSync(".env.local", "utf-8").split("\n")) {

@@ -14,6 +14,12 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 
 const FIXTURE_SLUGS = [
   "main-st-e-milton",

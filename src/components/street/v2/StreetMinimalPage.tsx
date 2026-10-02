@@ -1,25 +1,24 @@
 // src/components/street/v2/StreetMinimalPage.tsx
-// The MINIMAL street shell (registry ingest, 2026-07). A deterministic, honest
-// layout for a deliberately-published zero/low-sale street. Reuses the forest-v2
-// Hero / Inventory / FinalCtas sections and CSS; adds the no-data trust anchor,
-// a "where it is" block, neighbourhood-level (clearly-labelled) market context,
-// schools, and nearby streets. NO LLM prose, NO fabricated street-level stats.
+// The MINIMAL street shell (registry ingest, 2026-07). A deterministic layout for a
+// deliberately-published street with no generated profile. Reuses the forest-v2 Hero /
+// Inventory / FinalCtas sections and CSS; adds a "where it is" block, schools and nearby
+// streets. NO LLM prose.
+//
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40): the trust anchor ("No resales recorded
+// yet" / "Too few recent sales to publish a price"), the area fallback line and the
+// neighbourhood market block (the neighbourhood's sold count and typical) were claims derived
+// from sold records, and left for every visitor. The hero's neutral line is the one mention.
 import './street-theme.css';
 import type { StreetV2Data } from './types';
-import { compactPrice } from './format';
 import type { MinimalStreetView } from '@/lib/streetMinimal';
 import { StreetHero, StreetInventory, StreetFinalCtas } from './sections';
 import { StreetAddresses } from './AddressLadder';
-import { resaleClaim } from './resaleClaim';
 import SiteNavLive from '../../nav/SiteNavLive';
 import SiteFooter from '../../nav/SiteFooter';
 import { GuideUplinks } from '../../guides/GuideUplinks';
 import { guidesForStreet } from '@/lib/guides/uplinks';
 
 export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: MinimalStreetView }) {
-  // the shared gate — absence only where the record is genuinely empty (see resaleClaim.ts).
-  // view.noData is this shell's own street-specific absence prose; it is kept for the zero case.
-  const claim = resaleClaim(view.name, data.hasAnySale, view.noData);
   const facts: Array<{ label: string; value: string }> = [];
   if (view.neighbourhoodName) facts.push({ label: 'Neighbourhood', value: view.neighbourhoodName });
   if (view.typeLabel) facts.push({ label: 'Street type', value: view.typeLabel.charAt(0).toUpperCase() + view.typeLabel.slice(1) });
@@ -32,26 +31,12 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
   return (
     <div className="street-v2">
       <SiteNavLive variant="page" context={navContext} />
-      <StreetHero data={data} soldGate={false} />
-
-      {/* Section 6 — the trust anchor. Plain, prominent, no hedging.
-          It used to hardcode "No resales recorded yet" for every street that reached this shell,
-          including streets that had just sold. Same gate as the full shell now — resaleClaim() is
-          the only place either shell decides between absence and suppression. */}
-      <section className="s-block">
-        <div className="s-wrap">
-          <div
-            className="s-placeholder"
-            style={{ borderLeft: '3px solid var(--s-green, #2f6b3f)', paddingLeft: 20 }}
-          >
-            <h2>{claim.heading}</h2>
-            <p>{claim.body}</p>
-          </div>
-        </div>
-      </section>
+      {/* This shell renders no sold-records island, so the neutral line signs in and returns
+          here rather than pointing at an anchor the page does not carry. */}
+      <StreetHero data={data} soldLine={{ returnPath: `/streets/${data.slug}` }} />
 
       {/* Section 2 — where it is + street facts */}
-      <section className="s-block s-alt">
+      <section className="s-block">
         <div className="s-wrap">
           <div className="s-sechead">
             <span className="s-eyebrow">The street</span>
@@ -63,8 +48,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
               {view.neighbourhoodName && view.neighbourhoodSlug && (
                 <p>
                   It sits within{' '}
-                  <a href={`/neighbourhoods/${view.neighbourhoodSlug}`}>{view.neighbourhoodName}</a>.{' '}
-                  {claim.areaFallbackLine}
+                  <a href={`/neighbourhoods/${view.neighbourhoodSlug}`}>{view.neighbourhoodName}</a>.
                 </p>
               )}
             </div>
@@ -95,57 +79,6 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
           </div>
         </div>
       </section>
-
-      {/* Section 4 — neighbourhood-level market context. Provenance is explicit:
-          named as neighbourhood-wide, with the sample and window, never as this
-          street's own numbers. */}
-      {view.area && (
-        <section className="s-block">
-          <div className="s-wrap">
-            <div className="s-sechead">
-              <span className="s-eyebrow">Area market context</span>
-              <h2>How {view.area.neighbourhoodName} is trading</h2>
-            </div>
-            <div className="s-msum">
-              <p>
-                These figures describe <b>{view.area.neighbourhoodName}</b> overall, {view.area.soldCount12mo} recorded
-                {' '}sale{view.area.soldCount12mo === 1 ? '' : 's'} over the {view.area.window}, <b>not {view.name} specifically</b>.
-                They are the neighbourhood the street belongs to, offered as context, not a street-level estimate.
-              </p>
-              <div className="s-msum-stats">
-                <div className="s-stat" style={{ padding: 0 }}>
-                  <div className="s-stat-l">Neighbourhood sales</div>
-                  <div className="s-stat-v">{view.area.soldCount12mo}</div>
-                </div>
-                <div className="s-stat" style={{ padding: 0 }}>
-                  <div className="s-stat-l">Window</div>
-                  <div className="s-stat-v">{view.area.window}</div>
-                </div>
-                {/* "Market activity score 85" (MA-001 defect 16) had no unit, scale or source on the
-                    page and none in the code that produced it; the one number an owner came for,
-                    the neighbourhood typical, was missing. The score is gone, the typical is here. */}
-                {data.areaContext?.typicalPrice != null && (
-                  <div className="s-stat" style={{ padding: 0 }}>
-                    <div className="s-stat-l">Neighbourhood typical price</div>
-                    <div className="s-stat-v">
-                      <b>$</b>
-                      {compactPrice(data.areaContext.typicalPrice)}
-                    </div>
-                    {data.areaContext.basis && <div className="s-stat-d">{data.areaContext.basis}</div>}
-                  </div>
-                )}
-              </div>
-              {view.neighbourhoodSlug && (
-                <p style={{ marginTop: 16 }}>
-                  <a className="s-b2" href={`/neighbourhoods/${view.neighbourhoodSlug}`}>
-                    See the full {view.area.neighbourhoodName} market →
-                  </a>
-                </p>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Section 3 — schools serving the area */}
       {view.schools.length > 0 && (
@@ -197,10 +130,10 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
         </section>
       )}
 
-      {/* MC-003 guide up-links. A minimal street has no condo sale pill by construction, so
-          the condo guide never joins this set; the three every street carries do. */}
+      {/* MC-003 guide up-links. Condo-heavy is an active condo listing (a condo type card), the
+          same IDX marker the full shell reads (MC-046). */}
       <GuideUplinks
-        guides={guidesForStreet({ condoHeavy: data.hero.salePills.some((p) => p.type === 'condo'), hubSlugs: view.neighbourhoodSlug ? [view.neighbourhoodSlug] : [] })}
+        guides={guidesForStreet({ condoHeavy: data.productTypes.some((t) => t.type === 'condo'), hubSlugs: view.neighbourhoodSlug ? [view.neighbourhoodSlug] : [] })}
         context={data.name}
         variant="street"
         hubs={view.neighbourhoodSlug ? [view.neighbourhoodSlug] : []}

@@ -49,6 +49,7 @@ import type {
 import { formatPriceFull } from '@/lib/format';
 import { resolveStreetName } from "@/lib/streetName";
 import { PUBLIC_SALE_WHERE, PUBLIC_LEASE_WHERE, PUBLIC_LISTING_WHERE } from '@/lib/listings/vow';
+import { requireVowAccess, type VowAccess } from '@/lib/vow/door';
 
 const PER_PAGE = 36;
 // THE 100-RESULT LINE (MC-036, item 4). A public search may show a consumer at most 100
@@ -227,13 +228,14 @@ function titleCaseHood(h: string): string {
 }
 
 /**
- * @param opts.vow true when the request's session is a signed-in, acknowledged VOW consumer
+ * @param opts.vow the reader's VowAccess (vowReaderAccess) when the session is a signed-in, acknowledged VOW consumer
  *   (the page decides that with getSession; this loader never reads a cookie). The cards then
  *   carry `vow`. Default false: nothing VOW-only is selected, let alone serialised.
  */
-export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: boolean } = {}): Promise<ListingsV2Data> {
+export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: VowAccess | null } = {}): Promise<ListingsV2Data> {
   const where = buildWhere(query);
-  const vow = opts.vow === true;
+  // MC-046: the VOW-only columns are selected only against a reader's access from the door.
+  const vow = opts.vow ? (requireVowAccess(opts.vow), true) : false;
 
   let orderBy: Record<string, string> = { listedAt: 'desc' };
   if (query.sort === 'price_asc') orderBy = { price: 'asc' };
@@ -253,7 +255,6 @@ export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: bool
     rows,
     pinRows,
     avgPriceAgg,
-    domAgg,
     newThisWeek,
     activeCount,
     neighbourhoodStats,
@@ -285,10 +286,6 @@ export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: bool
       },
     }),
     prisma.listing.aggregate({ where: activeBase, _avg: { price: true } }),
-    prisma.listing.aggregate({
-      where: { ...activeBase, daysOnMarket: { gt: 0 } },
-      _avg: { daysOnMarket: true },
-    }),
     prisma.listing.count({ where: { ...activeBase, listedAt: { gte: sevenDaysAgo } } }),
     prisma.listing.count({ where: activeBase }),
     prisma.listing.groupBy({
@@ -368,7 +365,6 @@ export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: bool
   }));
 
   const avg = Math.round(avgPriceAgg._avg.price || 0);
-  const avgDom = Math.round(domAgg._avg.daysOnMarket || 0);
   const statusLabel = query.status === 'rent' ? 'for rent' : 'for sale';
 
   // FAQs ported from the live page — built from the same real aggregates.
@@ -379,11 +375,11 @@ export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: bool
     },
     {
       question: `What is the average home price in ${config.CITY_NAME}?`,
-      answer: `The average asking price for a ${config.CITY_NAME} home right now is ${formatPriceFull(avg)}. Prices range widely by property type and neighbourhood — detached homes in established areas like Old ${config.CITY_NAME} sit higher, while condos and townhouses in newer subdivisions can come in considerably lower.`,
+      answer: `The average asking price for a ${config.CITY_NAME} home right now is ${formatPriceFull(avg)}. Prices range widely by property type and neighbourhood: detached homes in established areas like Old ${config.CITY_NAME} sit higher, while condos and townhouses in newer subdivisions can come in considerably lower.`,
     },
     {
       question: `What neighbourhoods are in ${config.CITY_NAME} ${config.CITY_PROVINCE}?`,
-      answer: `${config.CITY_NAME}'s main residential neighbourhoods include Dempsey, Beaty, Willmott, Hawthorne Village, Timberlea, Old ${config.CITY_NAME}, Coates, Clarke, Scott, Harrison, Ford, Walker, and Cobban. Each has its own mix of housing stock, schools, and price points — use the neighbourhood filter to narrow your search.`,
+      answer: `${config.CITY_NAME}'s main residential neighbourhoods include Dempsey, Beaty, Willmott, Hawthorne Village, Timberlea, Old ${config.CITY_NAME}, Coates, Clarke, Scott, Harrison, Ford, Walker, and Cobban. Each has its own mix of housing stock, schools, and price points. Use the neighbourhood filter to narrow your search.`,
     },
     {
       question: `How do I book a showing for a ${config.CITY_NAME} home?`,
@@ -397,7 +393,9 @@ export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: bool
     totalPages,
     listings,
     mapPins,
-    stats: { avgPrice: avg, avgDom, newThisWeek, activeCount },
+    // No average days on market (MC-046 Stage 1, R12): DOM is a VOW field, even averaged over
+    // active rows. "New this week" stays: a count of active listings (R13).
+    stats: { avgPrice: avg, newThisWeek, activeCount },
     neighbourhoodOptions: NEIGHBOURHOOD_FILTER_OPTIONS,
     hoods,
     streets,

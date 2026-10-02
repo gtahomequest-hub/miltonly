@@ -77,7 +77,6 @@ export function StatsBand({ data }: { data: ListingsV2Data }) {
   const s = data.stats;
   const tiles = [
     { l: 'Avg asking price', v: shortPrice(s.avgPrice), s: 'across active listings' },
-    { l: 'Avg days on market', v: s.avgDom > 0 ? `${s.avgDom}` : '—', s: 'before a deal firms up' },
     { l: 'New this week', v: `${s.newThisWeek}`, s: 'fresh listings, last 7 days' },
     { l: 'Active right now', v: s.activeCount.toLocaleString(), s: 'homes on the market' },
   ];

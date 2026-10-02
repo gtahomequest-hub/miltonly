@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { hubDrift } from "@/lib/hubDrift";
 import type { Metadata } from "next";
 import { config } from "@/lib/config";
 import { getHubData } from "@/lib/hubData";
 import { getHubFooter, HUB_BRAND } from "@/lib/hubFooter";
-import { getHubMetaLive, getHubInputCached, hubCanonical } from "@/lib/hubLive";
+import { getHubMetaLive, getHubPublicCached, hubCanonical } from "@/lib/hubLive";
 import HubPage from "@/components/hub/HubPage";
 import SchemaScript from "@/components/SchemaScript";
 import {
@@ -46,11 +45,9 @@ interface Props {
   params: { slug: string };
 }
 
-// Every hub meta reads the LIVE builder — the Timberlea patch, generalised.
-// The stored HubContent.metaDescription is no longer served to anyone: it was a
-// snapshot of a market that has since moved under it on 21 of 22 hubs, and on
-// two of them it published a price the page itself suppresses. See lib/hubLive.ts
-// for the measurements and lib/ai/hub/hubMeta.ts for the one shared formula.
+// Every hub meta reads the LIVE builder. The stored HubContent.metaDescription is not served.
+// MC-046 Stage 1 (R4): the description is figure-free, written from the count of homes for sale
+// today and the published street guides only (lib/ai/hub/hubMeta.ts).
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const meta = await getHubMetaLive(params.slug);
   if (!meta) return { title: "Neighbourhood Not Found" };
@@ -63,20 +60,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function NeighbourhoodPage({ params }: Props) {
   const data = await getHubData(params.slug);
-  const drift = await hubDrift(params.slug);
   if (!data) notFound();
   // The site footer, on the hub too. The legacy navy footer it replaced (2026-09-11)
   // linked three neighbourhoods and two streets; this links every published hub.
   const footer = await getHubFooter();
 
-  // Projected hub Place/ItemList schema (DEC-WS4-2) — rebuilt best-effort so the SEO
-  // the WS5 page carried is preserved; falls back to the neighbourhood schema if it throws.
+  // Projected hub Place/ItemList schema (DEC-WS4-2), rebuilt best-effort so the SEO the WS5
+  // page carried is preserved. MC-046: it carries no aggregatePrice, and it is built from the
+  // same request-cached public input the metadata and the body read (DB1 only).
   let hubSchema: Record<string, unknown> | null = null;
   try {
-    // Same request-cached input the metadata and the body read — one computation,
-    // so the JSON-LD cannot describe a different aggregate than the rendered page.
-    const input = await getHubInputCached(params.slug);
-    if (!input) throw new Error("no hub input");
+    const pub = await getHubPublicCached(params.slug);
+    if (!pub) throw new Error("no hub input");
     // The hub JSON-LD ItemList mirrors exactly what the page renders: the published-only,
     // capped ladder (data.streets) plus any VIP-strip street not already in it. data.streets /
     // data.vipStreets are already published-only + capped by getHubData, so the schema declares
@@ -87,7 +82,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
       ...data.streets.map((s) => ({ name: s.name, slug: s.slug })),
       ...data.vipStreets.filter((v) => !ladderSlugs.has(v.slug)).map((v) => ({ name: v.name, slug: v.slug })),
     ];
-    hubSchema = projectHubSchema(input, renderedStreets) as unknown as Record<string, unknown>;
+    hubSchema = projectHubSchema({ neighbourhood: { name: pub.name }, projectedStreets: [] }, renderedStreets) as unknown as Record<string, unknown>;
   } catch {
     hubSchema = null;
   }
@@ -105,11 +100,10 @@ export default async function NeighbourhoodPage({ params }: Props) {
       slug: data.slug,
       description: data.character || `Real estate data for ${data.name}, ${config.CITY_NAME}.`,
     }),
-    // FAQPage only while the stored generation matches the live aggregate (MC-027, MA-005 defect
-    // 1): the June answers carried June figures into the SERP. A drifted hub keeps its FAQs on
-    // the page (dated prose beside live tiles is the regenerate cron's job) and hands Google
-    // nothing until it is regenerated.
-    ...(data.faqs.length && !drift.drifted ? [generateFAQSchema(data.faqs)] : []),
+    // FAQPage follows EXACTLY the rendered FAQ set (MC-046 R2). getHubData filters the stored
+    // answers for figures and VOW topics whatever the generation's age, so the drift gate
+    // (MC-027), which read the sold aggregate to decide, is no longer needed here.
+    ...(data.faqs.length ? [generateFAQSchema(data.faqs)] : []),
   ];
 
   return (

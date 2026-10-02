@@ -17,9 +17,31 @@
 // being handed the June answers), and /api/sync/regenerate-hubs regenerates drifted hubs, a few
 // per run, from the same getHubInputCached the page renders from.
 
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
-import { getHubInputCached } from "@/lib/hubLive";
+import { getNeighbourhoodCached } from "@/lib/hubLive";
+import { buildHubInput, buildRuralHubInput } from "@/lib/ai/buildHubInput";
 import { calcHubDataHash } from "@/lib/hubDataHash";
+import type { HubGeneratorInput } from "@/types/hub-generator";
+
+/**
+ * The hub's live DB2 input, dispatched on profile and memoised for the request (moved here from
+ * hubLive.ts in MC-046). SYSTEM READERS ONLY: the regenerate-on-drift cron, inside the VOW door's
+ * scope. Nothing a visitor is served is built from it. Fail-soft: null for standard_no_hub.
+ */
+export const getHubInputCached = cache(
+  async (slug: string): Promise<HubGeneratorInput | null> => {
+    const nbhd = await getNeighbourhoodCached(slug);
+    if (!nbhd) return null;
+    try {
+      if (nbhd.profile === "urban_hub") return await buildHubInput(slug);
+      if (nbhd.profile === "rural_hub") return await buildRuralHubInput(slug);
+      return null;
+    } catch {
+      return null;
+    }
+  },
+);
 
 export { calcHubDataHash };
 
