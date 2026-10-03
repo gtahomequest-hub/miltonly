@@ -1,7 +1,6 @@
 // VOW sync core — pure-function mapping + SQL builders + AMPRE fetch helpers.
 // Shared between:
 //   - src/app/api/sync/sold/route.ts  (production, writes to Neon via soldDb)
-//   - scripts/test-vow-sync-prospect.ts  (local verification, writes to prospect via pg)
 //
 // Single source of truth for the AMPRE → sold.sold_records column mapping.
 // Do NOT duplicate mapping logic elsewhere; import from here.
