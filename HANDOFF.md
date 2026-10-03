@@ -2,7 +2,7 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-10-03 (MC-051, the local ORACLE sync removed): `main` is **`82bef24`** (`chore/remove-oracle-sync` @ `94c8afd` by SHA) plus docs; production serves `82bef24` (`miltonly-9bjov6p8h`), battery `PASS · 25 checks · 719 pages · 929s`, leak test `CLEAN · 6,155 responses · 0 findings`. Record `scratchpad/reports/MC-051-remove-oracle-sync.md`. Before it, MC-046 Stage 1 (`aa8c9d8`): VOW cache purged (4 keys, 1,438 paths). The rotated `CRON_SECRET` is live; the old one gets 401. **VOW terms are version 6.** **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** `STREET_REGEN_ENABLED` unset. Record `scratchpad/reports/MC-046-stage01-visitor-view.md`._
+_Last rewritten 2026-10-03 (MC-051, five unused local sync scripts removed, then its docs reworded in a docs-only follow-up): `main` is **`82bef24`** (the MC-051 branch @ `94c8afd` by SHA) plus docs; production serves `82bef24` (`miltonly-9bjov6p8h`), battery `PASS · 25 checks · 719 pages · 929s`, leak test `CLEAN · 6,155 responses · 0 findings`. Record `scratchpad/reports/MC-051-remove-local-sync.md`. Before it, MC-046 Stage 1 (`aa8c9d8`): VOW cache purged (4 keys, 1,438 paths). The rotated `CRON_SECRET` is live; the old one gets 401. **VOW terms are version 6.** **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** `STREET_REGEN_ENABLED` unset. Record `scratchpad/reports/MC-046-stage01-visitor-view.md`._
 
 ## READ THIS FIRST
 
@@ -12,10 +12,10 @@ _Last rewritten 2026-10-03 (MC-051, the local ORACLE sync removed): `main` is **
   - Placeholders ("No written profile yet", 41 pages): 13 / 15 / 1.154 / 0.615.
   - Written pages: 222 / 78 / 0.351 / 0.748.
 
-**MC-051: THE LOCAL ORACLE SYNC IS GONE. MERGED 2026-10-03 AS `82bef24`; PRODUCTION SERVES IT.**
-- **Deleted:** `scripts/oracle-sync.mjs`, `sync-neon-to-local.mjs`, `test-vow-sync-prospect.ts`, `scheduled-sync-wrapper.ps1`, `install-scheduled-task.ps1`, and the `vow-sync.ts` comment naming the test. Nothing imported or ran them.
-- **On this machine:** neither "Miltonly Neon Sync" nor "Oracle Daily Sync" was registered. `ORACLE_DATABASE_URL` was already in no `.env*` file in any of the six worktrees, no OS scope and no Vercel env. No local Postgres exists here (no service, process, port, binary or data directory).
-- **`git grep -i oracle`:** 7 hits, all the ordinary word (`scripts/town/*`, `src/data/townNeighbourhood*.ts`, `src/lib/hubSchools.ts`, `src/lib/portal/door.ts`).
+**MC-051: FIVE UNUSED LOCAL SYNC SCRIPTS REMOVED. MERGED 2026-10-03 AS `82bef24`; PRODUCTION SERVES IT.**
+- **Deleted:** five unused local sync scripts (the sync script itself, `sync-neon-to-local.mjs`, `test-vow-sync-prospect.ts`, `scheduled-sync-wrapper.ps1`, `install-scheduled-task.ps1`) and the `vow-sync.ts` comment naming the test. Nothing imported or ran them.
+- **On this machine:** neither of the two scheduled tasks ("Miltonly Neon Sync" and the local sync's daily task) was registered. The local sync's env variable was already in no `.env*` file in any of the six worktrees, no OS scope and no Vercel env. No local Postgres exists here (no service, process, port, binary or data directory).
+- **A case-insensitive `git grep` of the whole tree for the removed system's name:** 7 hits, all the ordinary word (`scripts/town/*`, `src/data/townNeighbourhood*.ts`, `src/lib/hubSchools.ts`, `src/lib/portal/door.ts`). The docs no longer name the system; the branch name and the three MC-051 commit subjects in git history still do.
 
 **MC-046 STAGE 1: EVERY VOW-DERIVED FIGURE OFF THE VISITOR VIEW. MERGED 2026-10-02 AS `aa8c9d8`.**
 - **Shipped:** `6507ab9` by SHA, `miltonly-psjjp2ksi`. Purge ran 12 seconds after Ready (4 Upstash keys, db2/db3 tags, 1,438 card and og.png paths; 0 keys left). Battery `PASS · 25 checks · 719 pages · 1004s`, leak `CLEAN · 6,170 responses · 0 findings`. Cron auth: sync/sold and warm-hubs 200 on the new secret, 401 on the old (header and query).
@@ -891,7 +891,7 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`82bef24`** (MC-051: `chore/remove-oracle-sync` @ `94c8afd` by SHA) plus docs; production serves `82bef24` (`miltonly-9bjov6p8h`) |
+| `main` | **`82bef24`** (MC-051: its branch @ `94c8afd` by SHA) plus docs; production serves `82bef24` (`miltonly-9bjov6p8h`) |
 | battery on production | **`PASS · 25 checks · 719 pages · 929s`** at `82bef24`, 2026-10-03, leak test `CLEAN · 6,155 responses · 0 findings` |
 | `prisma migrate status` | **clean**, 33 migrations (`20260927120000_portal_vow_reviewer_throttle_erasure` was already applied when merged, MC-050) |
 | held for the next batch | Nothing held. **Street heads frozen until 2026-10-26** (MC-048); **street-prose rewrite and new-page generation paused** (MC-049, MC-047 Step 0; `STREET_REGEN_ENABLED` unset). **VOW terms v6** (MC-047) |
