@@ -2,7 +2,7 @@
 
 CORE · D:\miltonly · main
 
-**Five unused local sync scripts are out of the repo. The MC-051 branch @ `94c8afd` merged by SHA (`--no-ff`) as `82bef24`. Production `miltonly-9bjov6p8h` serves it, and `/api/build` answers `82bef2410b2cb1468f50313fc119e4860570819a`. Production battery `PASS · 25 checks · 719 pages · 929s`, leak test `CLEAN · 6,155 responses · 0 findings`.** There was no preview, because nothing under `src/` changes behaviour.
+**Five unused local sync scripts are out of the repo. The MC-051 branch @ `94c8afd` merged by SHA (`--no-ff`) as `82bef24`. Production `miltonly-9bjov6p8h` serves it, and `/api/build` answers `82bef2410b2cb1468f50313fc119e4860570819a`. Production battery `PASS · 25 checks · 719 pages · 929s`, leak test `CLEAN · 6,155 responses · 0 findings`.** There was no preview, because nothing under `src/` changes behaviour. A docs-only follow-up the same day reworded every line naming the removed system (§6).
 
 ## 1. The scheduled tasks: neither existed
 
@@ -64,3 +64,16 @@ Zero hits name the sync system.
   - `/api/build` answers `{"commit":"82bef2410b2cb1468f50313fc119e4860570819a","builtAt":"2026-10-03T14:43:46.459Z","env":"production"}`, served from 14:54:39Z.
   - `miltonly-cjgm67aik`, the morning report commit, was canceled by the ignore rule as designed.
 - **Battery** (`scratchpad/mc051/battery-prod-82bef24.log`, started 14:55:22Z): `PASS · 25 checks · 719 pages · 929s`, `82bef24 served == expected`, leak test `CLEAN · 6,155 responses · 0 findings`.
+
+## 6. Follow-up, 2026-10-03: the docs reworded (docs only, no code)
+
+- **Reworded:** every line that named the removed system, in `HANDOFF.md` (lines 5, 15–18, 894), `QUEUE.md:638` and this record. The record was renamed to `MC-051-remove-local-sync.md` with `git mv`, so its history follows it.
+  - **The new wording:** "five unused local sync scripts", "the local sync's env variable", "the two scheduled tasks", and "the MC-051 branch @ `94c8afd`".
+  - **What is described instead of spelled out:** the sync script's own filename and the second task's name. The other four filenames and "Miltonly Neon Sync" are still spelled out. The §4 table now describes each hit instead of quoting it, because every quote contained the word.
+  - **Unchanged:** every fact, SHA and count.
+- **Grep:** after `2be2bbf`, a case-insensitive `git grep -n` of the whole tree for the word has 7 hits. They are exactly the 7 allowed ordinary-word lines: `scripts/town/*` ×3, `src/data/townNeighbourhoodMap.ts:5`, `src/data/townNeighbourhoods.ts:12`, `src/lib/hubSchools.ts:8` and `src/lib/portal/door.ts:135`. The raw output is in the reply, not in this file, because a copy in this tracked file would add 7 more hits.
+- **Places outside the tree that still contain the word:** the remote branch ref on origin (head `94c8afd`) and the commit subjects of `94c8afd`, `82bef24` and `93f81a3`. History was not rewritten, because `main` is pushed and merges go by SHA. The ref was not deleted. Neither was asked for.
+- **Commit:** `2be2bbf` on `main`, pushed. Its deployment, `miltonly-k0kgtfp00` (matched by `githubCommitSha`), was canceled by the ignore rule after 3s.
+- **Production:** `npx vercel ls --prod` still lists `miltonly-9bjov6p8h` as the latest Ready deployment. At 21:36:44Z, `/api/build` answered `{"commit":"82bef2410b2cb1468f50313fc119e4860570819a","builtAt":"2026-10-03T14:43:46.459Z","env":"production"}`.
+  - No battery was run: production did not change, and the last battery passed on this same deployment.
+- This section lands as a second docs-only commit on top of `2be2bbf`.
