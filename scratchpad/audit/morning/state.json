@@ -1,9 +1,12 @@
 {
- "date": "2026-10-03",
+ "date": "2026-10-04",
  "vercel": {
   "spend": 0,
   "projected": 0,
-  "yesterday": null
+  "yesterday": {
+   "date": "2026-10-03",
+   "total": 0
+  }
  },
  "neon": {
   "projects": [
