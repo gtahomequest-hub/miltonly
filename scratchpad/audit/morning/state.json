@@ -1,10 +1,10 @@
 {
- "date": "2026-10-04",
+ "date": "2026-10-05",
  "vercel": {
   "spend": 0,
   "projected": 0,
   "yesterday": {
-   "date": "2026-10-03",
+   "date": "2026-10-04",
    "total": 0
   }
  },
@@ -12,8 +12,38 @@
   "projects": [
    {
     "id": "wispy-sun-45493958",
-    "computeHours": 0,
-    "egressBytes": 0
+    "computeHours": 90.6,
+    "egressBytes": 128870330785
+   },
+   {
+    "id": "snowy-morning-95239072",
+    "computeHours": 74.5,
+    "egressBytes": 44675149101
+   },
+   {
+    "id": "fancy-bread-13256110",
+    "computeHours": 29.1,
+    "egressBytes": 2759640304
+   },
+   {
+    "id": "lingering-sea-07597558",
+    "computeHours": 28.5,
+    "egressBytes": 316687332
+   },
+   {
+    "id": "winter-leaf-52425555",
+    "computeHours": 12.9,
+    "egressBytes": 44581195
+   },
+   {
+    "id": "small-truth-21911860",
+    "computeHours": 0.2,
+    "egressBytes": 1908
+   },
+   {
+    "id": "tiny-tree-26988255",
+    "computeHours": 0.1,
+    "egressBytes": 43712
    },
    {
     "id": "wispy-grass-52233942",
@@ -21,37 +51,7 @@
     "egressBytes": 0
    },
    {
-    "id": "small-truth-21911860",
-    "computeHours": 0,
-    "egressBytes": 0
-   },
-   {
-    "id": "tiny-tree-26988255",
-    "computeHours": 0,
-    "egressBytes": 0
-   },
-   {
     "id": "old-hill-58721761",
-    "computeHours": 0,
-    "egressBytes": 0
-   },
-   {
-    "id": "snowy-morning-95239072",
-    "computeHours": 0,
-    "egressBytes": 0
-   },
-   {
-    "id": "fancy-bread-13256110",
-    "computeHours": 0,
-    "egressBytes": 0
-   },
-   {
-    "id": "lingering-sea-07597558",
-    "computeHours": 0,
-    "egressBytes": 0
-   },
-   {
-    "id": "winter-leaf-52425555",
     "computeHours": 0,
     "egressBytes": 0
    }
@@ -59,12 +59,12 @@
  },
  "gsc": {
   "latest": {
-   "date": "2026-09-29",
+   "date": "2026-10-03",
    "clicks": 6,
-   "impressions": 484,
-   "ctr": 0.012396694214876033,
-   "position": 8.948347107438018,
-   "weekday": "Tue"
+   "impressions": 413,
+   "ctr": 0.014527845036319613,
+   "position": 10.198547215496369,
+   "weekday": "Sat"
   }
  },
  "leads": {
