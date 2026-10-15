@@ -1,10 +1,10 @@
 {
- "date": "2026-10-14",
+ "date": "2026-10-15",
  "vercel": {
   "spend": 0,
   "projected": 0,
   "yesterday": {
-   "date": "2026-10-13",
+   "date": "2026-10-14",
    "total": 0
   }
  },
@@ -12,38 +12,38 @@
   "projects": [
    {
     "id": "snowy-morning-95239072",
-    "computeHours": 196.5,
-    "egressBytes": 59936944425
+    "computeHours": 211.4,
+    "egressBytes": 62038307573
    },
    {
     "id": "wispy-sun-45493958",
-    "computeHours": 157.9,
-    "egressBytes": 221313373970
+    "computeHours": 159.7,
+    "egressBytes": 222880907226
    },
    {
     "id": "fancy-bread-13256110",
-    "computeHours": 84.5,
-    "egressBytes": 7323374072
+    "computeHours": 90,
+    "egressBytes": 7794838425
    },
    {
     "id": "lingering-sea-07597558",
-    "computeHours": 81.9,
-    "egressBytes": 9722925442
+    "computeHours": 87.5,
+    "egressBytes": 9796983520
    },
    {
     "id": "winter-leaf-52425555",
-    "computeHours": 21.6,
-    "egressBytes": 75656179
+    "computeHours": 23.3,
+    "egressBytes": 79407075
    },
    {
     "id": "small-truth-21911860",
     "computeHours": 0.4,
-    "egressBytes": 5088
+    "egressBytes": 5406
    },
    {
     "id": "tiny-tree-26988255",
     "computeHours": 0.4,
-    "egressBytes": 119394
+    "egressBytes": 127236
    },
    {
     "id": "wispy-grass-52233942",
@@ -59,17 +59,17 @@
  },
  "gsc": {
   "latest": {
-   "date": "2026-10-11",
-   "clicks": 14,
-   "impressions": 415,
-   "ctr": 0.033734939759036145,
-   "position": 9.525301204819277,
-   "weekday": "Sun"
+   "date": "2026-10-13",
+   "clicks": 6,
+   "impressions": 585,
+   "ctr": 0.010256410256410256,
+   "position": 9.900854700854701,
+   "weekday": "Tue"
   }
  },
  "leads": {
-  "yesterday": 0,
-  "mtd": 1
+  "yesterday": 1,
+  "mtd": 2
  },
  "actions": [
   "zero-lead-traffic",
