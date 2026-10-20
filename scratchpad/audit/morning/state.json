@@ -1,11 +1,11 @@
 {
- "date": "2026-10-19",
+ "date": "2026-10-20",
  "vercel": {
-  "spend": 8.22,
-  "projected": 20.93,
+  "spend": 9.22,
+  "projected": 21.2,
   "yesterday": {
-   "date": "2026-10-18",
-   "total": 1.49
+   "date": "2026-10-19",
+   "total": 0.36
   }
  },
  "neon": {
@@ -33,7 +33,7 @@
    {
     "id": "winter-leaf-52425555",
     "computeHours": 27.1,
-    "egressBytes": 89980391
+    "egressBytes": 89988782
    },
    {
     "id": "small-truth-21911860",
@@ -78,7 +78,6 @@
  },
  "actions": [
   "zero-lead-traffic",
-  "page-two-query",
-  "street-no-page"
+  "page-two-query"
  ]
 }
