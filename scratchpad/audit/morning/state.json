@@ -1,11 +1,11 @@
 {
- "date": "2026-10-21",
+ "date": "2026-10-22",
  "vercel": {
-  "spend": 10.02,
-  "projected": 21.16,
+  "spend": 10.36,
+  "projected": 20.66,
   "yesterday": {
-   "date": "2026-10-20",
-   "total": 0.35
+   "date": "2026-10-21",
+   "total": 0.34
   }
  },
  "neon": {
@@ -23,7 +23,7 @@
    {
     "id": "fancy-bread-13256110",
     "computeHours": 111.4,
-    "egressBytes": 9590820488
+    "egressBytes": 9590881543
    },
    {
     "id": "lingering-sea-07597558",
@@ -33,7 +33,7 @@
    {
     "id": "winter-leaf-52425555",
     "computeHours": 27.2,
-    "egressBytes": 90009417
+    "egressBytes": 90019515
    },
    {
     "id": "small-truth-21911860",
@@ -64,12 +64,12 @@
  },
  "gsc": {
   "latest": {
-   "date": "2026-10-19",
-   "clicks": 4,
-   "impressions": 555,
-   "ctr": 0.007207207207207207,
-   "position": 8.52972972972973,
-   "weekday": "Mon"
+   "date": "2026-10-20",
+   "clicks": 2,
+   "impressions": 507,
+   "ctr": 0.0039447731755424065,
+   "position": 8.761341222879684,
+   "weekday": "Tue"
   }
  },
  "leads": {
