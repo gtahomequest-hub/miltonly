@@ -1,10 +1,10 @@
 {
- "date": "2026-10-22",
+ "date": "2026-10-23",
  "vercel": {
-  "spend": 10.36,
-  "projected": 20.66,
+  "spend": 10.69,
+  "projected": 19.76,
   "yesterday": {
-   "date": "2026-10-21",
+   "date": "2026-10-22",
    "total": 0.34
   }
  },
@@ -12,13 +12,13 @@
   "projects": [
    {
     "id": "snowy-morning-95239072",
-    "computeHours": 263.9,
-    "egressBytes": 74129429389
+    "computeHours": 265.5,
+    "egressBytes": 75996016638
    },
    {
     "id": "wispy-sun-45493958",
-    "computeHours": 166,
-    "egressBytes": 228993901526
+    "computeHours": 167,
+    "egressBytes": 229212045150
    },
    {
     "id": "fancy-bread-13256110",
@@ -64,12 +64,12 @@
  },
  "gsc": {
   "latest": {
-   "date": "2026-10-20",
-   "clicks": 2,
-   "impressions": 507,
-   "ctr": 0.0039447731755424065,
-   "position": 8.761341222879684,
-   "weekday": "Tue"
+   "date": "2026-10-21",
+   "clicks": 7,
+   "impressions": 593,
+   "ctr": 0.011804384485666104,
+   "position": 10.860033726812816,
+   "weekday": "Wed"
   }
  },
  "leads": {
